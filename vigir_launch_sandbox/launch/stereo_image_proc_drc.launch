@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+
+<launch>
+  <node pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc" output="screen" ns="stereo">
+    
+    <!--Need to use approximate_sync as cameras run asyncronously-->
+    <param name="approximate_sync" value="true" />
+      
+    <remap from="right/image_raw" to="/right_eye/image_raw"/>
+    <remap from="right/camera_info" to="/right_eye/camera_info"/>
+    <remap from="left/image_raw" to="/left_eye/image_raw"/>
+    <remap from="left/camera_info" to="/left_eye/camera_info"/>
+  </node>
+
+</launch>
+
