@@ -1,0 +1,17 @@
+<package>
+  <description brief="vigir_ocs_msg2">
+
+     vigir_ocs_msg2
+
+  </description>
+  <author>vigir</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/vigir_ocs_msg2</url>
+  <depend package="roscpp"/>
+  <depend package="rospy"/>
+  <depend package="std_msgs"/>
+
+</package>
+
+
