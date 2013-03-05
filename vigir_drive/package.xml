@@ -1,0 +1,28 @@
+<package>
+  <name>vigir_drive</name>
+  <version>0.0.0</version>
+  <description>vigir_drive</description>
+  <maintainer email="conner@torcrobotics.com">David Conner</maintainer>
+
+  <license>BSD</license>
+
+  <url type="website">http://ros.org/wiki/florian/vigir_drive</url>
+
+  <author email="conner@torcrobotics.com">David Conner</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>vigir_ocs_msg</build_depend>
+
+  <run_depend>roscpp</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>vigir_ocs_msg</run_depend>
+
+  <export>
+
+  </export>
+</package>

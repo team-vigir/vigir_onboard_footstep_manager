@@ -38,7 +38,7 @@
 #include <stdlib.h>
 
 #include <ros/ros.h>
-#include <vigir_ocs_msg2/OCSDrive.h>
+#include <vigir_ocs_msg/OCSDrive.h>
 
 #define KEYCODE_SPACE 0x20
 #define KEYCODE_A 0x61
@@ -59,7 +59,7 @@ class KeyboardDrive
 {
   private:
   double walk_vel, run_vel, yaw_rate, yaw_rate_run;
-  vigir_ocs_msg2::OCSDrive drive_cmd;
+  vigir_ocs_msg::OCSDrive drive_cmd;
 
   ros::NodeHandle n_;
   ros::Publisher drive_pub_;
@@ -69,7 +69,7 @@ class KeyboardDrive
   { 
     drive_cmd.throttle = drive_cmd.steer = 0;
 
-    drive_pub_ = n_.advertise<vigir_ocs_msg2::OCSDrive>("drive_cmd", 1);
+    drive_pub_ = n_.advertise<vigir_ocs_msg::OCSDrive>("drive_cmd", 1);
 
     ros::NodeHandle n_private("~");
 
