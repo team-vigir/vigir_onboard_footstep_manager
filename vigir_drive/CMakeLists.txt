@@ -4,7 +4,7 @@ project(vigir_drive)
 
 # Load catkin and all dependencies required for this package
 # TODO: remove all from COMPONENTS that are not catkin packages.
-find_package(catkin REQUIRED COMPONENTS roscpp std_msgs vigir_ocs_msg)
+find_package(catkin REQUIRED COMPONENTS roscpp std_msgs flor_ocs_msgs)
 
 # include_directories(include ${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS})
 # CATKIN_MIGRATION: removed during catkin migration
@@ -67,7 +67,7 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
     DEPENDS
-    CATKIN-DEPENDS roscpp std_msgs geometry_msgs vigir_ocs_msg
+    CATKIN-DEPENDS roscpp std_msgs geometry_msgs flor_ocs_msgs
     INCLUDE_DIRS ${Boost_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS}
     LIBRARIES ${Boost_LIBRARIES} ${catkin_LIBRARIES}
 )

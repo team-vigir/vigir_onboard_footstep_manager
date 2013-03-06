@@ -34,7 +34,7 @@
 #include <std_msgs/Float64.h>
 #include <message_filters/subscriber.h>
 
-#include <vigir_ocs_msg/OCSDrive.h>
+#include <flor_ocs_msgs/OCSDrive.h>
 
 using namespace message_filters;
 
@@ -42,14 +42,14 @@ class CheatDriver
 {
 
 protected:
-    vigir_ocs_msg::OCSDrive drive_cmd;
+    flor_ocs_msgs::OCSDrive drive_cmd;
     ros::Publisher&          throttle_pub;
     ros::Publisher&          steer_pub;
 public:
 
     CheatDriver(ros::Publisher& _tp, ros::Publisher& _sp) : throttle_pub(_tp), steer_pub(_sp) { };
 
-    void storeDriveCmd(const vigir_ocs_msg::OCSDrive& cmd)
+    void storeDriveCmd(const flor_ocs_msgs::OCSDrive& cmd)
     {
         drive_cmd = cmd;
         //ROS_INFO(" Recv'd: (% 4d, % 4d)\n", drive_cmd.throttle, drive_cmd.steer);
@@ -87,7 +87,7 @@ int main(int argc, char** argv)
     CheatDriver driver(throttle_pub, steer_pub);
 
     // Subscribe to tele-op command and register callback
-    //message_filters::Subscriber<vigir_ocs_msg::OCSDrive> driver_cmd(nh,"drive_cmd",1);
+    //message_filters::Subscriber<flor_ocs_msgs::OCSDrive> driver_cmd(nh,"drive_cmd",1);
     //driver_cmd.registerCallback(&CheatDriver::storeDriveCmd, &driver);
     ros::Subscriber sub = nh.subscribe("drive_cmd", 1, &CheatDriver::storeDriveCmd, &driver);
 

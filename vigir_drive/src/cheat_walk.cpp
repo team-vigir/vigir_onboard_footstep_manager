@@ -34,7 +34,7 @@
 #include <geometry_msgs/Twist.h>
 #include <message_filters/subscriber.h>
 
-#include <vigir_ocs_msg/OCSDrive.h>
+#include <flor_ocs_msgs/OCSDrive.h>
 
 using namespace message_filters;
 
@@ -42,14 +42,14 @@ class CheatWalker
 {
 
 protected:
-    vigir_ocs_msg::OCSDrive drive_cmd;
+    flor_ocs_msgs::OCSDrive drive_cmd;
     ros::Publisher&          twist_pub;
 
 public:
 
     CheatWalker(ros::Publisher& _tp) : twist_pub(_tp) { };
 
-    void storeDriveCmd(const vigir_ocs_msg::OCSDrive& cmd)
+    void storeDriveCmd(const flor_ocs_msgs::OCSDrive& cmd)
     {
         drive_cmd = cmd;
         ROS_INFO(" Recv'd: (% 4d, % 4d)\n", drive_cmd.throttle, drive_cmd.steer);
@@ -83,7 +83,7 @@ int main(int argc, char** argv)
     CheatWalker walker(twist_pub);
 
     // Subscribe to tele-op command and register callback
-    //message_filters::Subscriber<vigir_ocs_msg::OCSDrive> driver_cmd(nh,"drive_cmd",1);
+    //message_filters::Subscriber<flor_ocs_msgs::OCSDrive> driver_cmd(nh,"drive_cmd",1);
     //driver_cmd.registerCallback(&CheatDriver::storeDriveCmd, &driver);
     ros::Subscriber sub = nh.subscribe("drive_cmd", 1, &CheatWalker::storeDriveCmd, &walker);
 
