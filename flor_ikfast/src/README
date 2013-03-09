@@ -1,0 +1,1 @@
+copy ikfast_*.py to /usr/lib/python2.7/dist-packages/openravepy/_openravepy_0_8/

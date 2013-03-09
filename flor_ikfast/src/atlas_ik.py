@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Copyright (C) 2009-2011 Rosen Diankov (rosen.diankov@gmail.com)
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,11 +40,6 @@ def main(env,options):
     print "Robots:",robots
 
     robot = env.GetRobot('atlas')
-    links = robot.GetLinks();
-    print "    Robot      :",robot
-    print "      Links    :" #,robot.GetLinks()
-    for ilink,link in enumerate(links):
-        print "  ",ilink," : ",link
 
     manips = [robot.GetManipulator('atlas_left_leg')]
 
@@ -58,14 +53,29 @@ def main(env,options):
 
     print "Solver ..."
     solver = ikfast.IKFastSolver(kinbody=robot)
+    print "solver=",solver
+    print "solvers:"
+    for isolv,solv in enumerate(solver.GetSolvers()):
+        print isolv," : ",solv
+
+    # Generate the requested IK solution
     chaintree = solver.generateIkSolver(baselink=0,eelink=33,freeindices=[],solvefn=ikfast.IKFastSolver.solveFullIK_6D)
 
     print "Write solver ..."
     code = solver.writeIkSolver(chaintree)
-    open('ik.cpp','w').write(code)
 
-    print links[0]," : ", solver.SolverSolution(links[0])
-    print links[33]," : ", solver.SolverSolution(links[0])
+    preamble = "//------------- Atlas Robot -----------------------\n"
+    links = robot.GetLinks();
+    joints = robot.GetJoints();
+    #print "    Robot      :",robot
+    preamble += "//   Links:\n"
+    for ilink,link in enumerate(links):
+        preamble += "//      "+ str(ilink)+" : "+str(link)+"\n"
+    preamble += "//   Joints    :\n"
+    for ijoint,joint in enumerate(joints):
+        preamble += "//      "+ str(ijoint)+" : "+str(joint)+"\n"
+    preamble += "//-------------------------------------------------\n"
+    open('ik_pelvis_left_foot.cpp','w').write(preamble+code)
     print "exit"
     sys.exit(0);
 
@@ -102,7 +112,7 @@ def main(env,options):
                                 break
                     if len(goodsolutions) > 0: # found solutions, so break!
                         break
-                    
+
         handles = [env.plot3(array([target]),20.0)]
         for sols in goodsolutions:
             handlerays = []
