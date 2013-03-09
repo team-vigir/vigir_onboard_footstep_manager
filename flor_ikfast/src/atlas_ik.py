@@ -64,6 +64,7 @@ def main(env,options):
     print "Write solver ..."
     code = solver.writeIkSolver(chaintree)
 
+    # Define a preamble to C++ file that lists the robot info
     preamble = "//------------- Atlas Robot -----------------------\n"
     links = robot.GetLinks();
     joints = robot.GetJoints();

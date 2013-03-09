@@ -1651,11 +1651,6 @@ class IKFastSolver(AutoReloader):
             chaintree.leftmultiply(Tleft=self.multiplyMatrix(LinksLeft), Tleftinv=self.multiplyMatrix(LinksLeftInv[::-1]))
         chaintree.dictequations += self.globalsymbols
 
-        print "Returning from generateIkSolver"
-        print "chaintree.dict_eqns"
-        for ieqn,eqn in enumerate(chaintree.dictequations):
-            print ieqn, " : ", eqn
-
         return chaintree
 
     def MatchSimilarFraction(self,num,numbersubs,matchlimit = 40):

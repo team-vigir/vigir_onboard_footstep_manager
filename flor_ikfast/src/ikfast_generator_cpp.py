@@ -514,16 +514,13 @@ int main(int argc, char** argv)
             allvars = node.solvejointvars + node.freejointvars
             code += "//---------------------------------------------\n"
             code += "//---------------------------------------------\n"
-            code += "//   Forward Kinematics\n"
-            code += "//  Variables:\n"
+            code += "//   Forward Kinematics\n\n"
+            code += "//  Variables: "
             for ivar,var in enumerate(allvars):
-                code += "//   "
-                print " var:",var
-                for vv in var:
-                    print "    vv:",vv
-                    code += str(vv)
-                code += "\n"
-            code += "//  Forward Kinematics sympy matrix\n//  T=Matrix[\n"
+                if ivar > 0:
+                    code += " , "
+                code += str(var[0])
+            code += "\n\n//  Forward Kinematics sympy matrix\n//  T=Matrix([\n"
             counter = 0
             row = 0
             for ivar,var in enumerate(node.Tfk):
@@ -541,7 +538,7 @@ int main(int argc, char** argv)
                     counter=0
                 else:
                     code += "  ,  "
-            code += "//  ];\n"
+            code += "//  ]);\n"
             code += "//---------------------------------------------\n"
             code += "//---------------------------------------------\n"
             code += self.getFKFunctionPreamble()
