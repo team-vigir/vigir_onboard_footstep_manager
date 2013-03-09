@@ -35,34 +35,17 @@ from openravepy.misc import sequence_cross_product
 
 def main(env,options):
     "Main example code."
+    print "Loading scene <",options.scene,">"
     env.Load(options.scene)
     robots = env.GetRobots()
     print "Robots:",robots
 
     robot = env.GetRobot('atlas')
 
-    manips = [robot.GetManipulator('atlas_left_leg')]
-
-    print "Manips:",manips
-    #print "    Robot      :",manips[0]
-    #print "    Base       :",manips[0].getBase()
-    #print "    EndEffector:",manips[0].GetEndEffector()
-
-    #kinbody = env.ReadRobotXMLFile('robots/barrettwam.robot.xml')
-    #env.Add(kinbody)
-
-    print "Solver ..."
+    print "Solvers ..."
     solver = ikfast.IKFastSolver(kinbody=robot)
-    print "solver=",solver
-    print "solvers:"
     for isolv,solv in enumerate(solver.GetSolvers()):
         print isolv," : ",solv
-
-    # Generate the requested IK solution
-    chaintree = solver.generateIkSolver(baselink=0,eelink=33,freeindices=[],solvefn=ikfast.IKFastSolver.solveFullIK_6D)
-
-    print "Write solver ..."
-    code = solver.writeIkSolver(chaintree)
 
     # Define a preamble to C++ file that lists the robot info
     preamble = "//------------- Atlas Robot -----------------------\n"
@@ -76,56 +59,23 @@ def main(env,options):
     for ijoint,joint in enumerate(joints):
         preamble += "//      "+ str(ijoint)+" : "+str(joint)+"\n"
     preamble += "//-------------------------------------------------\n"
-    open('ik_pelvis_left_foot.cpp','w').write(preamble+code)
+
+    print preamble
+
+    # Generate the requested IK solution
+    #chaintree = solver.generateIkSolver(baselink=0,eelink=33,freeindices=[],solvefn=ikfast.IKFastSolver.solveFullIK_6D)
+    #code = solver.writeIkSolver(chaintree)
+    #open('ik_pelvis_left_foot.cpp','w').write(preamble+code)
+
+    # Generate the requested IK solution
+    print "Now try the left arm ..."
+    chaintree = solver.generateIkSolver(baselink=3,eelink=9,freeindices=[],solvefn=ikfast.IKFastSolver.solveFullIK_6D)
+    code = solver.writeIkSolver(chaintree)
+    open('ik_utorso_left_hand.cpp','w').write(preamble+code)
+
     print "exit"
-    sys.exit(0);
+    #sys.exit(0);
 
-    print "while True"
-    while True:
-        maxsolutions = 40
-        goodsolutions = []
-        with env:
-            # move the robot in a random collision-free position and call the IK
-            while True:
-                target=ikmodel.manip.GetTransform()[0:3,3]+(random.rand(3)-0.5)
-                robotsolutions = []
-                for ikmodel in ikmodels:
-                    for ikmodel2 in ikmodels:
-                        ikmodel2.robot.Enable(ikmodel==ikmodel2)
-                    solutions = ikmodel.manip.FindIKSolutions(IkParameterization(target,IkParameterization.Type.Lookat3D),IkFilterOptions.CheckEnvCollisions)
-                    if len(solutions) == 0:
-                        break
-                    robotsolutions.append(solutions)
-                for ikmodel2 in ikmodels:
-                    ikmodel2.robot.Enable(True)
-                if len(robotsolutions) == len(robots):
-                    print 'found solutions for all manipulators, search for a joint collision-free one'
-                    goodsolutions = []
-                    # permute randomly to get more interesting solutions
-                    allsols = [sols for sols in sequence_cross_product(*robotsolutions)]
-                    stdrandom.shuffle(allsols)
-                    for sols in allsols:
-                        for ikmodel,sol in izip(ikmodels,sols):
-                            ikmodel.robot.SetDOFValues(sol,ikmodel.manip.GetArmIndices())
-                        if not any([ikmodel.robot.CheckSelfCollision() or env.CheckCollision(ikmodel.robot) for ikmodel in ikmodels]):
-                            goodsolutions.append(sols)
-                            if len(goodsolutions) >= maxsolutions:
-                                break
-                    if len(goodsolutions) > 0: # found solutions, so break!
-                        break
-
-        handles = [env.plot3(array([target]),20.0)]
-        for sols in goodsolutions:
-            handlerays = []
-            with env:
-                for ikmodel,sol in izip(ikmodels,sols):
-                    ikmodel.robot.SetDOFValues(sol,ikmodel.manip.GetArmIndices())
-                    T = ikmodel.manip.GetTransform()
-                    globaldir = numpy.dot(T[0:3,0:3],ikmodel.manip.GetDirection())
-                    dist = linalg.norm(T[0:3,3]-target)+0.4
-                    handlerays.append(env.drawlinelist(array([T[0:3,3], T[0:3,3]+dist*globaldir]),5,colors=[0.1,0.1,1]))
-                env.UpdatePublishedBodies()
-            time.sleep(0.1)
 
 from optparse import OptionParser
 from openravepy.misc import OpenRAVEGlobalArguments

@@ -2,3 +2,5 @@ copy ikfast_*.py to /usr/lib/python2.7/dist-packages/openravepy/_openravepy_0_8/
 
 run ./atlas_ik.py to generate the IK, and FK (including symbolic form) in C++ file
 
+Use left arm scene file for custom left arm
+./atlas_ik.py --scene=../robot/atlas_left_arm.xml
