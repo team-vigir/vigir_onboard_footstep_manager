@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+#
+# Copyright (C) 2013 David Conner (conner@torcrobotics.com)
+#
+#based on tutorial code
+#.. examplepre-block:: tutorial_iklookat_multiple
 # Copyright (C) 2009-2011 Rosen Diankov (rosen.diankov@gmail.com)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,14 +17,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Shows how to use lookat inverse kinematics to have multiple robots maintain line of sight while avoiding collisions.
+#
 
-.. examplepre-block:: tutorial_iklookat_multiple
-
-.. examplepost-block:: tutorial_iklookat_multiple
-"""
 from __future__ import with_statement # for python 2.5
-__author__ = 'Rosen Diankov'
+__author__ = 'David Conner'
 
 from itertools import izip
 import time
@@ -62,19 +63,36 @@ def main(env,options):
 
     print preamble
 
+
+    #print "Press Enter to continue"
+    #raw_input();
+
     # Generate the requested IK solution
-    #chaintree = solver.generateIkSolver(baselink=0,eelink=33,freeindices=[],solvefn=ikfast.IKFastSolver.solveFullIK_6D)
-    #code = solver.writeIkSolver(chaintree)
-    #open('ik_pelvis_left_foot.cpp','w').write(preamble+code)
+    print "Generate solution from pelvis to left foot ..."
+    chaintree = solver.generateIkSolver(baselink=0,eelink=33,freeindices=[],solvefn=ikfast.IKFastSolver.solveFullIK_6D)
+    code = solver.writeIkSolver(chaintree)
+    open('ik_pelvis_left_foot.cpp','w').write(preamble+code)
+
+    print "Generate solution from right foot to pelvis ... "
+    chaintree = solver.generateIkSolver(baselink=39,eelink=0,freeindices=[],solvefn=ikfast.IKFastSolver.solveFullIK_6D)
+    code = solver.writeIkSolver(chaintree)
+    open('ik_right_foot_pelvis.cpp','w').write(preamble+code)
 
     # Generate the requested IK solution
     print "Now try the left arm ..."
-    chaintree = solver.generateIkSolver(baselink=3,eelink=9,freeindices=[],solvefn=ikfast.IKFastSolver.solveFullIK_6D)
+
+    print "Not writing symbolic code for this solver yet"
+    chaintree = solver.generateIkSolver(baselink=4,eelink=9,freeindices=[],solvefn=ikfast.IKFastSolver.solveFullIK_TranslationDirection5D) #solveFullIK_6D)
     code = solver.writeIkSolver(chaintree)
-    open('ik_utorso_left_hand.cpp','w').write(preamble+code)
+    open('ik_clav_left_hand.cpp','w').write(preamble+code)
+
+    print "Now try the right arm ..."
+    #chaintree = solver.generateIkSolver(baselink=3,eelink=25,freeindices=[],solvefn=ikfast.IKFastSolver.solveFullIK_Translation3D) #.solveFullIK_TranslationDirection5D) #solveFullIK_6D)
+    #code = solver.writeIkSolver(chaintree)
+    #open('ik_utorso_right_arm.cpp','w').write(preamble+code)
 
     print "exit"
-    #sys.exit(0);
+    sys.exit(0);
 
 
 from optparse import OptionParser
