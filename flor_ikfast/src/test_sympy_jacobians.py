@@ -87,7 +87,10 @@ pprint(Qy)
 Qz = simplify(trigsimp((T[1,0] - T[0,1])*S))
 print "Qz="
 pprint(Qz)
-Qnes = simplify(trigsimp(sqrt(Qw*Qw + Qx*Qx + Qy*Qy + Qz*Qz)))
+
+#This seems to fail
+#Qnes = simplify(trigsimp(sqrt(Qw*Qw + Qx*Qx + Qy*Qy + Qz*Qz)))
+Qnes = trigsimp(sqrt(Qw*Qw + Qx*Qx + Qy*Qy + Qz*Qz))
 
 print "---------------------------------------"
 print "---------------------------------------"
