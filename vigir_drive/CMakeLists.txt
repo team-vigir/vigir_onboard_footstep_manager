@@ -49,12 +49,18 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 # rosbuild_add_boost_directories()
 #find_package(Boost REQUIRED COMPONENTS thread)
 include_directories(${Boost_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})
+
 add_executable(keyboard_drive src/keyboard_drive.cpp)
-add_executable(cheat_drive src/cheat_drive.cpp)
-add_executable(cheat_walk src/cheat_walk.cpp)
 target_link_libraries(keyboard_drive ${Boost_LIBRARIES} ${catkin_LIBRARIES} )
+add_dependencies(keyboard_drive ${catkin_EXPORTED_TARGETS})
+
+add_executable(cheat_drive src/cheat_drive.cpp)
 target_link_libraries(cheat_drive ${Boost_LIBRARIES} ${catkin_LIBRARIES} )
+add_dependencies(cheat_drive ${catkin_EXPORTED_TARGETS})
+
+add_executable(cheat_walk src/cheat_walk.cpp)
 target_link_libraries(cheat_walk ${Boost_LIBRARIES} ${catkin_LIBRARIES} )
+add_dependencies(cheat_walk ${catkin_EXPORTED_TARGETS})
 
 #target_link_libraries(${PROJECT_NAME})
 ## Generate added messages and services with any dependencies listed here
