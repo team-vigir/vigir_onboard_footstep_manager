@@ -64,9 +64,9 @@ add_dependencies(cheat_walk ${catkin_EXPORTED_TARGETS})
 
 #target_link_libraries(${PROJECT_NAME})
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-  #TODO DEPENDENCIES geometry_msgs std_msgs
-)
+#generate_messages(
+#TODO DEPENDENCIES geometry_msgs std_msgs
+#)
 # TODO: fill in what other packages will need to use this package
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
