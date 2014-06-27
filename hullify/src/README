@@ -1,0 +1,3 @@
+The current works in progress are convex_hull_qhull_ext.cpp and mesh_bounds.cpp
+
+Other files are deprecated attempts at other methods (greedy_proj.cpp) or backups.
