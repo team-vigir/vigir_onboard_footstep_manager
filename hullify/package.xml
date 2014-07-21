@@ -2,7 +2,7 @@
 <package>
   <name>hullify</name>
   <version>0.0.0</version>
-  <description>The hullify package: Converting laser scans to convex hulls</description>
+  <description>The hullify package: Converting user segmented point clouds to convex hulls with bounding planes</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <!-- Example:  -->
@@ -31,7 +31,6 @@
   <!-- The *_depend tags are used to specify dependencies -->
   <!-- Dependencies can be catkin packages or system dependencies -->
   <!-- Examples: -->
-  <build_depend>cmake_modules</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>laser_geometry</build_depend>
@@ -58,7 +57,7 @@
   <run_depend>visualization_msgs</run_depend>
   
   <!-- Use test_depend for packages you need only for testing: -->
-  <!--   <test_depend>gtest</test_depend> -->
+  <test_depend>gtest</test_depend>
   <buildtool_depend>catkin</buildtool_depend>
   
 

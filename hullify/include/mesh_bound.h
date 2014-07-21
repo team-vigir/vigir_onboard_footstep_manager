@@ -22,9 +22,12 @@
 #include "pcl/ros/conversions.h"
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_types.h>
-#include <pcl/filters/project_inliers.h>
+#include <pcl/common/pca.h>
 
 #include <Eigen/Dense>
+
+#include "plane_reps_and_3dmath.h"
+#include "hullify_view.h"
 
 #include <cstdlib>
 #include <string>
@@ -35,18 +38,23 @@ using std::cout;
 using std::cin;
 using std::endl;
 
+//See find_max_radial_dist()
+struct Pt_pos {
+	long idx;	//Index into pointcloud for a point
+	double angle;	//The point's radial position from reference
+};
+
 inline Eigen::Vector3d init_vec(const tf::Vector3& in);
-double pt_dist(pcl::PointXYZ pt1, pcl::PointXYZ pt2);
+int angle_compare(const void* a, const void* b);
 
 class MeshBound {
 	public:
-		MeshBound(string ff);
-		MeshBound(pcl::PointCloud<pcl::PointXYZ>::Ptr in_cloud, string ff);
+		MeshBound();
+		MeshBound(string ff, Hullify_View* in_view);
+		MeshBound(pcl::PointCloud<pcl::PointXYZ>::Ptr in_cloud, string ff, Hullify_View* in_view);
 
-		geometry_msgs::Polygon* mk_plane_rep(pcl::PointXYZ center, pcl::PointXYZ max_pt, Eigen::Vector3d normal);
 		void display_polygon(geometry_msgs::PolygonStamped polygon);
-		void find_centroid();
-		void find_plane();
+		void construct_planes();
 		void set_input_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr in_cloud);
 
 		pcl::ModelCoefficients get_plane1();
@@ -56,29 +64,42 @@ class MeshBound {
 		void publish_centroid();
 		void publish_plane1();
 		void publish_plane2();
-
+		
 	private:
-		void init_template_marker();
-		Eigen::Vector3d get_camera_normal();
+		void constructor_common();
+		void find_centroid();
+		void get_camera_normal();
+		void find_horiz_normal();
 		Eigen::Vector3d get_camera_position();
+		pcl::PointCloud<pcl::PointXYZ>::Ptr extract_middle_points(pcl::ModelCoefficients::Ptr horiz_plane);
+		int* get_max_radial_dist(pcl::PointCloud<pcl::PointXYZ>::Ptr proj_pts);
+		int* get_max_radial_dist_core(pcl::PointCloud<pcl::PointXYZ>::Ptr proj_pts, Eigen::Vector3d& ref_vec, Eigen::Vector3d& line_normal);
+		Pt_pos* find_all_pt_angles(Eigen::Vector3d& ref_line_slope, Eigen::Vector3d& ref_line_orth, pcl::PointCloud<pcl::PointXYZ>::Ptr proj_pts, long& num_pts);
+		bool pt_too_near_centroid(Pt_pos* pt_angles, long& pt_idx, Eigen::Vector3d& pt_to_centroid, long& num_pts);
+		void print_pt_angles(Pt_pos* pt_angles, long num_pts);
+		Eigen::Vector3d* get_ref_line_slope(pcl::PointCloud<pcl::PointXYZ>::Ptr proj_pts);
+		bool pt_wraps_past_ref_line(const Eigen::Vector3d& slope, const Eigen::Vector3d& line_norm, pcl::PointXYZ& pt);
+		bool is_valid_parametric_denom(int coord1, int coord2, Eigen::Vector3d slope, Eigen::Vector3d line_norm);
+		void verify_pt_proj_using_third(int coord, Eigen::Vector3d pt1, Eigen::Vector3d pt2);
+		bool determine_pt_hemisphere(double s);
+		void calculate_parametric_coefficients_for_proj(int coord1, int coord2, Eigen::Vector3d slope, Eigen::Vector3d line_norm, Eigen::Vector3d pt, double& s, double& t);
+		int* find_max_consecutive_angular_diff(Pt_pos* pt_angles, long num_pts);
 
-		void publish_normal(Eigen::Vector3d normal);
+		
+
 		void publish_proj_pts(pcl::PointCloud<pcl::PointXYZ>::Ptr proj_pts);
-		pcl::PointXYZ find_farthest_pt(pcl::ModelCoefficients::Ptr plane);
+		geometry_msgs::PolygonStamped mk_plane_msg(pcl::ModelCoefficients::Ptr plane);
 
 		ros::NodeHandle n;
 		string fixed_frame;
 		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
 		Eigen::Vector3d *centroid;
+		Eigen::Vector3d camera_normal;	//This is a unit vector
+		Eigen::Vector3d horiz_normal;
 		pcl::ModelCoefficients::Ptr plane1;
 		pcl::ModelCoefficients::Ptr plane2;
 
-		visualization_msgs::Marker template_marker;
-		ros::Publisher centroid_output;
-		ros::Publisher plane1_output;
-		ros::Publisher plane2_output;
-		ros::Publisher normal_output;
-		ros::Publisher proj_output;
+		Hullify_View* view;
 };
 
 

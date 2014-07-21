@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="14" failures="0" disabled="0" errors="0" time="0.001" name="AllTests">
+  <testsuite name="pt_to_plane_dist" tests="3" failures="0" disabled="0" errors="0" time="0">
+    <testcase name="on_plane" status="run" time="0" classname="pt_to_plane_dist" />
+    <testcase name="above_plane" status="run" time="0" classname="pt_to_plane_dist" />
+    <testcase name="below_plane" status="run" time="0" classname="pt_to_plane_dist" />
+  </testsuite>
+  <testsuite name="find_max_min_pts" tests="2" failures="0" disabled="0" errors="0" time="0">
+    <testcase name="minimal_cloud" status="run" time="0" classname="find_max_min_pts" />
+    <testcase name="equal_pts" status="run" time="0" classname="find_max_min_pts" />
+  </testsuite>
+  <testsuite name="vec_to_pt_on_plane" tests="2" failures="0" disabled="0" errors="0" time="0">
+    <testcase name="d_equal_zero" status="run" time="0" classname="vec_to_pt_on_plane" />
+    <testcase name="arb_planes" status="run" time="0" classname="vec_to_pt_on_plane" />
+  </testsuite>
+  <testsuite name="mk_sandwich_planes" tests="3" failures="0" disabled="0" errors="0" time="0.001">
+    <testcase name="normal_dist" status="run" time="0" classname="mk_sandwich_planes" />
+    <testcase name="xy_yz_xz" status="run" time="0.001" classname="mk_sandwich_planes" />
+    <testcase name="zero_dist" status="run" time="0" classname="mk_sandwich_planes" />
+  </testsuite>
+  <testsuite name="planes_are_eq" tests="1" failures="0" disabled="0" errors="0" time="0">
+    <testcase name="simple_test" status="run" time="0" classname="planes_are_eq" />
+  </testsuite>
+  <testsuite name="find_pts_between_parallel_planes" tests="3" failures="0" disabled="0" errors="0" time="0">
+    <testcase name="empty_cloud" status="run" time="0" classname="find_pts_between_parallel_planes" />
+    <testcase name="no_pts_on_plane" status="run" time="0" classname="find_pts_between_parallel_planes" />
+    <testcase name="pts_on_planes" status="run" time="0" classname="find_pts_between_parallel_planes" />
+  </testsuite>
+</testsuites>

@@ -1,0 +1,8 @@
+This file contains all requisite testing ideas and conventions for convex hull creation
+
+output topic: testing_default
+ptcloud generation executable: hull_tests
+
+Tests <- function:
+	First point in pointcloud is on centroid. <- MeshBound::get_line_slope()
+	Small object (radius < 0.01m) <- Many things, but MeshBound::get_line_slope()

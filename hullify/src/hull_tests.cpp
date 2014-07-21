@@ -15,7 +15,7 @@ using std::endl;
 using std::string;
 
 sensor_msgs::PointCloud mk_tetrahed();
-sensor_msgs::PointCloud mk_semi_sph(float density);
+sensor_msgs::PointCloud mk_semi_sph(float density, double term_angl);
 sensor_msgs::PointCloud mk_line();
 
 int main(int argc, char** argv){
@@ -29,16 +29,17 @@ int main(int argc, char** argv){
 	ros::Publisher p = n.advertise<sensor_msgs::PointCloud2>("/testing/default", 10);
 	
 	p.publish(tet2);
-	sleep(4);
 
 	ros::Duration rate(2);
-	float density;
+	float density = 1, term_angl = 3.14159265;
 	while (ros::ok()){
 		cout << "Please input a density for a semisphere: ";
-		//cout << "Please enter 1 to continue (making tetrahedron): ";
 		cin >> density;
-		
-		test1 = mk_semi_sph(density);
+		//cout << "Please enter 1 to continue (making tetrahedron): ";
+		cout << "Please enter a terminal angle for the pointcloud sphere: ";
+		cin >> term_angl;
+
+		test1 = mk_semi_sph(density, term_angl);
 		//test1 = mk_line();
 		//test1 = mk_tetrahed();
 		sensor_msgs::convertPointCloudToPointCloud2(test1, tet2);
@@ -84,7 +85,7 @@ sensor_msgs::PointCloud mk_tetrahed()
 
 //Parameters: density of 0 means no cloud, density of 1
 //	means maximum resolution.
-sensor_msgs::PointCloud mk_semi_sph(float density)
+sensor_msgs::PointCloud mk_semi_sph(float density, double term_angl)
 {
 	sensor_msgs::PointCloud semi_sph;
 	semi_sph.header.stamp = ros::Time::now();
@@ -100,7 +101,7 @@ sensor_msgs::PointCloud mk_semi_sph(float density)
 	float p;
 	srand(time(NULL));
 	for (float i = 0; i < 3.14159265; i += d_phi){
-		for (j = 0; j < 3.14159265; j += d_theta){
+		for (j = 0; j < term_angl; j += d_theta){
 			//Place a point here if we can
 			p = ((rand() % 100) + 1) / 100.0;
 			if (p <= density){

@@ -5,7 +5,7 @@ project(hullify)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  cmake_modules
+  roslib
   roscpp
   rospy
   laser_geometry
@@ -111,29 +111,25 @@ include_directories(${PCL_INCLUDE_DIRS})
 # )
 
 ## Declare a cpp executable
-add_executable(hullify_node src/hullify.cpp)
-target_link_libraries(hullify_node ${catkin_LIBRARIES})#Need ros library..
-
-add_executable(simple_hull src/simple_hull.cpp)
-target_link_libraries(simple_hull ${PCL_LIBRARIES} ${catkin_LIBRARIES})#Need ros library..
-set_target_properties(simple_hull PROPERTIES COMPILE_FLAGS "-Wall -g")
-
-add_executable(greedy_proj src/greedy_proj.cpp)
-target_link_libraries(greedy_proj ${PCL_LIBRARIES} ${catkin_LIBRARIES})
-set_target_properties(greedy_proj PROPERTIES COMPILE_FLAGS "-Wall -g")
-
+add_executable(aggregate_laser_scans src/deprecated/aggregate_laser_scans.cpp)
+target_link_libraries(aggregate_laser_scans ${catkin_LIBRARIES})#Need ros library..
 
 add_executable(hull_tests src/hull_tests.cpp)
 target_link_libraries(hull_tests ${PCL_LIBRARIES} ${catkin_LIBRARIES})
 set_target_properties(hull_tests PROPERTIES COMPILE_FLAGS "-Wall -g")
 
-add_executable(convex_hull src/convex_hull_qhull_ext.cpp src/qhull_interface.cpp src/mesh_bound.cpp)
+add_executable(convex_hull src/hullify_view.cpp src/convex_hull_qhull_ext.cpp src/qhull_interface.cpp src/mesh_bound.cpp src/plane_reps_and_3dmath.cpp)
 target_link_libraries(convex_hull ${PCL_LIBRARIES} ${catkin_LIBRARIES})
 set_target_properties(convex_hull PROPERTIES COMPILE_FLAGS "-Wall -g")
 
-add_executable(convex_hull_backup src/convex_hull_backup.cpp)
-target_link_libraries(convex_hull_backup ${PCL_LIBRARIES} ${catkin_LIBRARIES})
-set_target_properties(convex_hull_backup PROPERTIES COMPILE_FLAGS "-Wall -g")
+#deprecated
+#add_executable(greedy_proj src/deprecated/greedy_proj.cpp)
+#target_link_libraries(greedy_proj ${PCL_LIBRARIES} ${catkin_LIBRARIES})
+#set_target_properties(greedy_proj PROPERTIES COMPILE_FLAGS "-Wall -g")
+
+#add_executable(convex_hull_backup src/backup/convex_hull-06_25_2014.cpp)
+#target_link_libraries(convex_hull_backup ${PCL_LIBRARIES} ${catkin_LIBRARIES})
+#set_target_properties(convex_hull_backup PROPERTIES COMPILE_FLAGS "-Wall -g")
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -187,10 +183,11 @@ add_definitions(${EIGEN_DEFINITIONS})
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_hullify.cpp)
-# if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-# endif()
+catkin_add_gtest(${PROJECT_NAME}-test test/test_hullify.cpp src/plane_reps_and_3dmath.cpp)
+if(TARGET ${PROJECT_NAME}-test)
+   #target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME}) # original
+   target_link_libraries(${PROJECT_NAME}-test ${PCL_LIBRARIES} ${catkin_LIBRARIES})
+endif()
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)

@@ -7,11 +7,10 @@
 #include "pcl/ros/conversions.h"
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_types.h>
-#include <pcl/io/pcd_io.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/features/normal_3d.h>
-#include <pcl/io/vtk_lib_io.h>
 #include <pcl/filters/project_inliers.h>
+#include <pcl/common/pca.h>
 //#include <pcl/surface/convex_hull.h>
 
 //From Tutorial
@@ -29,6 +28,7 @@
 
 #include "qhull_interface.h"
 #include "mesh_bound.h"
+#include "hullify_view.h"
 
 #include <ctime>
 #include <cstdlib>
@@ -48,34 +48,30 @@ class MeshMaker{
 
 	private:
 		void init_input_topic();
-		void init_template_marker();
+		void init_mesh_name();
 		void convert_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg);
         bool get_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg, pcl::PointCloud<pcl::PointXYZ>::Ptr intermediate_cloud);
         bool is_valid_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+		Eigen::Vector3d get_principal_axis(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
 		
 		ros::NodeHandle n;
 		ros::Subscriber cloud_input;
-		ros::Publisher mesh_output;
-		string fixed_frame;
+		string visualization_ref_frame;
 		string in_topic_name;
-		string out_topic_name;
-		string base_name;   //Default, test_mesh
-		string prev_name;  //The name of the last saved mesh file (for deletion purposes)
-		string f_path;  //Path to the hullify package on Eva
-		vector<visualization_msgs::Marker> markers;
-		visualization_msgs::Marker template_marker;
+		string mesh_base_name;
+		//vector<visualization_msgs::Marker> markers;
 		Qhull_int qhull;
 		MeshBound* bounds;
+		Hullify_View* view;
 
 };
 
 //pcl::PolygonMesh::Ptr mk_mesh(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
-void writeBinarySTL(const char* f_name, const pcl::PolygonMesh& mesh);
 double pt_dist(pcl::PointXYZ pt1, pcl::PointXYZ pt2);
 
 int main (int argc, char** argv){	
 	//initalize the node
-	ros::init(argc, argv, "greedy_proj");
+	ros::init(argc, argv, "convex_hull");
 
 	MeshMaker converter;
 	converter.listen();
@@ -111,49 +107,32 @@ return output;
 
 MeshMaker::MeshMaker()
 {
-	prev_name = "";
-	fixed_frame = "/world";
-	bounds = new MeshBound(fixed_frame);
-
+	visualization_ref_frame = "/world";
+	view = new Hullify_View("convex_hull/", &visualization_ref_frame);
+	bounds = new MeshBound(visualization_ref_frame, view);
+	//cout << "Hi Jack!" << endl;
 	cout << "Currently, this program has minimal validation. Please input"
 		<< "\n\tvalid filenames and locations when prompted." << endl;
-	string input;
+	
 	init_input_topic();
+	init_mesh_name();
 
-	cout << "Please input an output topic name (1 for /mesh_marker): ";
-	cin >> input;
-	if (input == "1"){
-		out_topic_name = "/mesh_marker";
-	} else {
-		out_topic_name = input;
-	}
-
-	cout << "Please input the base output filename of the mesh (1 - test_mesh): ";
-	cin >> base_name;
-	if (input == "1"){
-		base_name = "test_mesh";
-	}
-
-	//Set the saving location of the mesh (hullify package)
-	f_path = string(getenv("HOME")) + "/ros/local_cat_ws/src/hullify/meshes/";
-
-	//Initialize template
-	init_template_marker();
-
-	//Initialize publisher and subscriber and begin waiting
+	//Initialize subscriber and begin waiting
 	cloud_input = n.subscribe(in_topic_name, 1, &MeshMaker::convert_cloud, this);
-	mesh_output = n.advertise<visualization_msgs::Marker>(out_topic_name.c_str(), 5);
 
-	cout << "Publisher and Subscriber Created." << endl;
-	cout << "in_topic: " << in_topic_name << " out_topic: " 
-		<< out_topic_name << endl;
+	cout << "Subscriber Created." << endl;
+	cout << "in_topic: " << in_topic_name << endl;
+
+	visualization_msgs::Marker marker_type;
+	view->add_mesh_topic(mesh_base_name);
+	view->add_topic_no_queue("principal_axis", marker_type);
 }
 
 void MeshMaker::init_input_topic()
 {
 	string input;
 	while(1){
-		cout << "What is the pointcloud input topic for this meshing node?"
+		cout << "What is the input pointcloud topic for this meshing node?"
 			<< "\n\t0 - new\n\t1 - /testing/default"
 			<< "\n\t2 - /flor/worldmodel/ocs/dist_query_pointcloud_result: ";
 		cin >> input;
@@ -177,49 +156,23 @@ void MeshMaker::init_input_topic()
 	}
 }
 
-MeshMaker::~MeshMaker()
+void MeshMaker::init_mesh_name()
 {
-	//If there is any mesh file left, delete it
-	if (prev_name != ""){
-		cout << "Deleting: " << prev_name << endl;
-		string command = "rm " + f_path + prev_name;
-		system(command.c_str());
+	string input;
+	cout << "Please input the base output filename of the mesh (1 - hull_mesh): ";
+	cin >> input;
+	if (input == "1"){
+		mesh_base_name = "hull_mesh";
+
+	} else {
+		mesh_base_name = input;
 	}
 }
 
-//Preconditions: f_name (the filename for the mesh), must be
-//  set prior to this call.
-void MeshMaker::init_template_marker()
+MeshMaker::~MeshMaker()
 {
-	cout << "Warning: template_marker.header.frame_id hardcoded to '/world'" << endl;
-	template_marker.header.frame_id = fixed_frame;
-	template_marker.header.stamp = ros::Time::now();
-	template_marker.header.seq = 1;
-	template_marker.action = visualization_msgs::Marker::ADD;
-	template_marker.type = visualization_msgs::Marker::MESH_RESOURCE;
-	template_marker.ns = "temp_namespace";
-	template_marker.id = 0;
-
-	template_marker.pose.position.x = 0;    //Where it goes
-	template_marker.pose.position.y = 0;
-	template_marker.pose.position.z = 0;
-
-	template_marker.pose.orientation.x = 0.0;   //What's its pose.
-	template_marker.pose.orientation.y = 0.0;
-	template_marker.pose.orientation.z = 0.0;
-	template_marker.pose.orientation.w = 1.0;
-
-	template_marker.scale.x = 1;    //Resizing required?
-	template_marker.scale.y = 1;
-	template_marker.scale.z = 1;
-
-	template_marker.color.a = 1.0;
-	template_marker.color.r = 0.5;
-	template_marker.color.g = 1.0;
-	template_marker.color.b = 0.0;
-
-	template_marker.lifetime = ros::Duration(0);
-	template_marker.mesh_use_embedded_materials = false;
+	delete view;
+	delete bounds;
 }
 
 //Simply spin and wait for callback requests
@@ -230,28 +183,11 @@ void MeshMaker::init_template_marker()
 //	system resources we just don't need. Little gain.
 void MeshMaker::listen()
 {
-	cout << "Awaiting pointclouds..." << endl;
+	cout << "Awaiting pointclouds..." << endl << endl;
 	ros::spin();
 	//ros::MultiThreadedSpinner spinner(4); //Note: queue size is 1, if you uncomment these lines, that must be changed as well.
 	//spinner.spin();
 
-}
-
-void writeBinarySTL(const char* f_name, const pcl::PolygonMesh& mesh)
-{
-	vtkSmartPointer<vtkPolyData> poly_data = vtkSmartPointer<vtkPolyData>::New();
-	pcl::io::mesh2vtk(mesh, poly_data);
-
-	vtkSmartPointer<vtkSTLWriter> poly_writer = vtkSmartPointer<vtkSTLWriter>::New();
-	poly_writer->SetInput(poly_data);
-	poly_writer->SetFileName(f_name);
-	poly_writer->SetFileTypeToBinary();
-	int ret = poly_writer->Write();
-	if (ret != 1){
-		cout << "Could not write to STL file in writeBinarySTL()" << endl;
-	}
-
-	return;
 }
 
 
@@ -276,47 +212,21 @@ void MeshMaker::convert_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg)
     	}
 
 	//Run qhull (or see comments just below)
-	pcl::PolygonMesh::Ptr out_poly = qhull.mk_mesh(intermediate_cloud);
+	pcl::PolygonMesh::Ptr convex_hull = qhull.mk_mesh(intermediate_cloud);
 
 	//In a system where qHull (libqhull5) is v2011.1, the below should work (untested).
 	//pcl::PolygonMesh::Ptr out_poly = mk_mesh(intermediate_cloud);
 	
 	//Get plane and centroid
 	bounds->set_input_cloud(intermediate_cloud);
-	bounds->find_centroid();
-	bounds->find_plane();
+	bounds->construct_planes();
 	bounds->publish_plane1();
+	bounds->publish_plane2();
 	bounds->publish_centroid();
-	pcl::ModelCoefficients::Ptr plane (new pcl::ModelCoefficients);
-	*plane = bounds->get_plane1();
 
-	//Delete previous mesh
-	if (prev_name != ""){
-		string command = "rm " + f_path + prev_name;
-		/*int ret =  */system(command.c_str());
-		//cout << "Return code of delete call: " << ret << endl;
-		prev_name = "";
-	}/* else {
-		cout << "Did not run rm on stl mesh file." << endl;
-		cout << "Prev_name: '" << prev_name << "'" << endl;
-	}*/
+	get_principal_axis(intermediate_cloud);
 
-	//Save the mesh
-	prev_name = base_name + boost::lexical_cast<std::string>(time(NULL)) + ".stl";
-	string temp = f_path + prev_name;
-	writeBinarySTL(temp.c_str(), *out_poly);
-
-	//Update the mesh marker array
-	if (markers.size() < 1){
-		markers.push_back(template_marker);
-	} else {
-		markers[0] = template_marker;
-	}
-
-	template_marker.mesh_resource = "package://hullify/meshes/" + prev_name;
-	template_marker.header.stamp = ros::Time::now();
-	template_marker.header.seq++;
-	mesh_output.publish(template_marker);   	
+	view->publish_mesh(mesh_base_name, convex_hull);
 }
 
 bool MeshMaker::get_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg, pcl::PointCloud<pcl::PointXYZ>::Ptr intermediate_cloud)
@@ -376,7 +286,22 @@ bool MeshMaker::is_valid_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
         
     }*/
 
-    
-
     return true;
+}
+
+Eigen::Vector3d MeshMaker::get_principal_axis(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question)
+{
+	pcl::PCA<pcl::PointXYZ> component_finder;
+	//pcl::PCA<pcl::PointXYZ> component_finder(*pts_in_question);
+	component_finder.setInputCloud(pts_in_question);
+
+	//cout << "HERE!" << endl;
+	Eigen::Matrix3f principal_axes = component_finder.getEigenVectors();
+	Eigen::Vector3f principal_axis = principal_axes.col(0);
+
+	cout << "Principle axis in get_principal_axis(): " << principal_axis << endl;
+	visualization_msgs::Marker pa_msg = view->mk_vector_msg(principal_axis.cast<double>());
+	view->publish("principal_axis", pa_msg);
+
+	return principal_axis.cast<double>();
 }

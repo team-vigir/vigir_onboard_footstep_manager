@@ -1,1 +1,0 @@
-This folder (meshes) exists to hold temporary meshes for the convex hull converter. rViz will load a mesh file once and only once, so the STL mesh file must be stored temporarily, loaded and then deleted. This folder is that storage.
