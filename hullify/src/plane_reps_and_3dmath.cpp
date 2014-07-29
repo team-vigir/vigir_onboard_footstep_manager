@@ -14,6 +14,9 @@ double difference(double var1, double var2)
 
 bool vecs_are_equal(Eigen::Vector3d v1, Eigen::Vector3d v2)
 {
+	v1 /= v1.norm();
+	v2 /= v2.norm();
+
 	if (difference(v1[0], v2[0]) <= FLOAT_TOLERANCE
 		&& difference(v1[1], v2[1]) <= FLOAT_TOLERANCE
 		&& difference(v1[2], v2[2]) <= FLOAT_TOLERANCE){

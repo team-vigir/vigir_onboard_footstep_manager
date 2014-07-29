@@ -109,7 +109,7 @@ include_directories(${PCL_INCLUDE_DIRS})
 # add_library(hullify
 #   src/${PROJECT_NAME}/hullify.cpp
 # )
-
+ 
 ## Declare a cpp executable
 add_executable(aggregate_laser_scans src/deprecated/aggregate_laser_scans.cpp)
 target_link_libraries(aggregate_laser_scans ${catkin_LIBRARIES})#Need ros library..
@@ -118,9 +118,13 @@ add_executable(hull_tests src/hull_tests.cpp)
 target_link_libraries(hull_tests ${PCL_LIBRARIES} ${catkin_LIBRARIES})
 set_target_properties(hull_tests PROPERTIES COMPILE_FLAGS "-Wall -g")
 
-add_executable(convex_hull src/hullify_view.cpp src/convex_hull_qhull_ext.cpp src/qhull_interface.cpp src/mesh_bound.cpp src/plane_reps_and_3dmath.cpp)
+add_executable(convex_hull src/hullify_view.cpp src/convex_hull_qhull_ext.cpp src/qhull_interface.cpp src/mesh_bound.cpp src/plane_reps_and_3dmath.cpp src/pose_transform.cpp)
 target_link_libraries(convex_hull ${PCL_LIBRARIES} ${catkin_LIBRARIES})
 set_target_properties(convex_hull PROPERTIES COMPILE_FLAGS "-Wall -g")
+
+add_executable(pose_playing src/pose_transform.cpp src/pose_transform_driver.cpp src/plane_reps_and_3dmath.cpp)
+target_link_libraries(pose_playing ${PCL_LIBRARIES} ${catkin_LIBRARIES})
+set_target_properties(pose_playing PROPERTIES COMPILE_FLAGS "-Wall -g")
 
 #deprecated
 #add_executable(greedy_proj src/deprecated/greedy_proj.cpp)
@@ -187,6 +191,12 @@ catkin_add_gtest(${PROJECT_NAME}-test test/test_hullify.cpp src/plane_reps_and_3
 if(TARGET ${PROJECT_NAME}-test)
    #target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME}) # original
    target_link_libraries(${PROJECT_NAME}-test ${PCL_LIBRARIES} ${catkin_LIBRARIES})
+endif()
+
+catkin_add_gtest(${PROJECT_NAME}-pose-test test/test_pose.cpp src/pose_transform.cpp)
+if(TARGET ${PROJECT_NAME}-pose-test)
+   #target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME}) # original
+   target_link_libraries(${PROJECT_NAME}-pose-test ${catkin_LIBRARIES})
 endif()
 
 ## Add folders to be run by python nosetests

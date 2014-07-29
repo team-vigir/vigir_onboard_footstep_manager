@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/1179/branches/groovy/adept/adept_common/src
+END
+motion_interface.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/!svn/ver/1179/branches/groovy/adept/adept_common/src/motion_interface.cpp
+END
+robot_state.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/!svn/ver/1179/branches/groovy/adept/adept_common/src/robot_state.cpp
+END
+joint_trajectory_handler.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/!svn/ver/1179/branches/groovy/adept/adept_common/src/joint_trajectory_handler.cpp
+END
+joint_trajectory_action.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/!svn/ver/1179/branches/groovy/adept/adept_common/src/joint_trajectory_action.cpp
+END
+joint_trajectory_downloader.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/!svn/ver/1179/branches/groovy/adept/adept_common/src/joint_trajectory_downloader.cpp
+END
+joint_relay_handler.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/!svn/ver/1179/branches/groovy/adept/adept_common/src/joint_relay_handler.cpp
+END

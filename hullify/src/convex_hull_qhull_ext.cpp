@@ -29,6 +29,7 @@
 #include "qhull_interface.h"
 #include "mesh_bound.h"
 #include "hullify_view.h"
+#include "pose_transform.h"
 
 #include <ctime>
 #include <cstdlib>
@@ -52,7 +53,8 @@ class MeshMaker{
 		void convert_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg);
         bool get_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg, pcl::PointCloud<pcl::PointXYZ>::Ptr intermediate_cloud);
         bool is_valid_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
-		Eigen::Vector3d get_principal_axis(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
+        geometry_msgs::PoseStamped get_wrist_orientation(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
+		Eigen::Matrix3d get_principal_axes(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
 		
 		ros::NodeHandle n;
 		ros::Subscriber cloud_input;
@@ -124,8 +126,10 @@ MeshMaker::MeshMaker()
 	cout << "in_topic: " << in_topic_name << endl;
 
 	visualization_msgs::Marker marker_type;
+	geometry_msgs::PoseStamped pose_type;
 	view->add_mesh_topic(mesh_base_name);
 	view->add_topic_no_queue("principal_axis", marker_type);
+	view->add_topic_no_queue("adept_wrist_orientation", pose_type);
 }
 
 void MeshMaker::init_input_topic()
@@ -224,7 +228,8 @@ void MeshMaker::convert_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg)
 	bounds->publish_plane2();
 	bounds->publish_centroid();
 
-	get_principal_axis(intermediate_cloud);
+	geometry_msgs::PoseStamped wrist_pose = get_wrist_orientation(intermediate_cloud);
+	view->publish("adept_wrist_orientation", wrist_pose);
 
 	view->publish_mesh(mesh_base_name, convex_hull);
 }
@@ -289,13 +294,36 @@ bool MeshMaker::is_valid_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
     return true;
 }
 
-Eigen::Vector3d MeshMaker::get_principal_axis(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question)
+//Believes x_axis is the palm-outward axis.
+geometry_msgs::PoseStamped MeshMaker::get_wrist_orientation(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question)
+{
+	Axes reference_axes, goal_axes;
+	reference_axes.x_axis = Eigen::Vector3d(1, 0, 0);
+	reference_axes.y_axis = Eigen::Vector3d(0, 1, 0);
+	reference_axes.z_axis = Eigen::Vector3d(0, 0, 1);
+
+	Eigen::Matrix3d principal_axes = get_principal_axes(pts_in_question);
+	goal_axes.x_axis = principal_axes.col(1);
+	goal_axes.y_axis = principal_axes.col(2);
+	goal_axes.z_axis = principal_axes.col(0);
+
+	Eigen::Vector3d camera_normal = bounds->get_camera_normal_vec();
+	if (acos(camera_normal.dot(goal_axes.x_axis) / (camera_normal.norm() * goal_axes.x_axis.norm())) > M_PI/4){
+		goal_axes.x_axis = -goal_axes.x_axis;
+		goal_axes.y_axis = -goal_axes.y_axis;
+	}
+
+	Eigen::Quaterniond pose_quat = get_axes_transformation(reference_axes, goal_axes);
+	Eigen::Vector3d offset = (goal_axes.x_axis / goal_axes.x_axis.norm()) * 0.03; //Offset by 3 centimeters out of palm.
+
+	return view->mk_pose_msg(pose_quat, bounds->get_centroid() + offset);
+}
+
+Eigen::Matrix3d MeshMaker::get_principal_axes(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question)
 {
 	pcl::PCA<pcl::PointXYZ> component_finder;
-	//pcl::PCA<pcl::PointXYZ> component_finder(*pts_in_question);
 	component_finder.setInputCloud(pts_in_question);
 
-	//cout << "HERE!" << endl;
 	Eigen::Matrix3f principal_axes = component_finder.getEigenVectors();
 	Eigen::Vector3f principal_axis = principal_axes.col(0);
 
@@ -303,5 +331,7 @@ Eigen::Vector3d MeshMaker::get_principal_axis(pcl::PointCloud<pcl::PointXYZ>::Pt
 	visualization_msgs::Marker pa_msg = view->mk_vector_msg(principal_axis.cast<double>());
 	view->publish("principal_axis", pa_msg);
 
-	return principal_axis.cast<double>();
+	//return principal_axis.cast<double>();
+	return principal_axes.cast<double>();
 }
+

@@ -7,3 +7,4 @@ srv_gen
 qtcreator-build
 *~
 *.backup
+.svn

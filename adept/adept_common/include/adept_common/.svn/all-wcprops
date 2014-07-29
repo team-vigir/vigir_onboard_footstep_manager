@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/!svn/ver/1179/branches/groovy/adept/adept_common/include/adept_common
+END
+joint_relay_handler.h
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/!svn/ver/1179/branches/groovy/adept/adept_common/include/adept_common/joint_relay_handler.h
+END
+joint_trajectory_handler.h
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/!svn/ver/1179/branches/groovy/adept/adept_common/include/adept_common/joint_trajectory_handler.h
+END
+joint_trajectory_downloader.h
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/!svn/ver/1179/branches/groovy/adept/adept_common/include/adept_common/joint_trajectory_downloader.h
+END

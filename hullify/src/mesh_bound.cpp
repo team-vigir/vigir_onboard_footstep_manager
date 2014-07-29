@@ -538,7 +538,20 @@ pcl::ModelCoefficients MeshBound::get_plane2()
 //Returns a copy of the centroid for local use.
 Eigen::Vector3d MeshBound::get_centroid()
 {
-	return *centroid;
+	if (centroid != NULL){
+		return *centroid;
+	}
+
+	return Eigen::Vector3d(0, 0, 0);
+}
+
+Eigen::Vector3d MeshBound::get_camera_normal_vec()
+{
+	if (centroid != NULL){
+		return camera_normal;
+	}
+
+	return Eigen::Vector3d(0, 0, 0);
 }
 
 

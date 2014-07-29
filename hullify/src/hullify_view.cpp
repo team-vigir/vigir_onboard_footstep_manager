@@ -302,3 +302,24 @@ geometry_msgs::Polygon Hullify_View::mk_plane_rep_from_bounding_line(Eigen::Vect
 
 	return out_poly;
 }
+
+geometry_msgs::PoseStamped Hullify_View::mk_pose_msg(Eigen::Quaterniond quat, Eigen::Vector3d pose_position)
+{
+	geometry_msgs::PoseStamped pose_msg;
+	pose_msg.header.frame_id = *visualization_ref_frame;
+	pose_msg.header.stamp = ros::Time::now();
+
+	geometry_msgs::Point pose_location;
+	pose_location.x = pose_position[0];
+	pose_location.y = pose_position[1];
+	pose_location.z = pose_position[2];
+
+	pose_msg.pose.position = pose_location;
+
+	pose_msg.pose.orientation.w = quat.w();
+	pose_msg.pose.orientation.x = quat.x();
+	pose_msg.pose.orientation.y = quat.y();
+	pose_msg.pose.orientation.z = quat.z();
+
+	return pose_msg;
+}

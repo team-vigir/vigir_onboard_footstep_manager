@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/robotarm/!svn/ver/124/adept_ros/osu_ros_adept
+END
+package.xml
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/robotarm/!svn/ver/105/adept_ros/osu_ros_adept/package.xml
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/robotarm/!svn/ver/123/adept_ros/osu_ros_adept/CMakeLists.txt
+END
