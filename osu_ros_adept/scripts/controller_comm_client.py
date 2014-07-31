@@ -46,7 +46,6 @@ def send_command(msg_params, joints):
 	#Send Joint angles
 	for i in range(6):
 		bytes_sent += sock.send(joints[i])	
-		print joints[i]		
 
 	#send unused joints, these are built into the message and must be there even if unused.
 	jt7 = jt8 = jt9 = jt10 = "0000"
@@ -82,6 +81,8 @@ def grab_values(req):
 	print "Joint Service Initiated"
 	cmd = []
 	add_header(cmd, req)
+
+	print "req: ", req
 
 	#add joints
 	jts = []

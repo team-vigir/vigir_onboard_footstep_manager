@@ -14,6 +14,10 @@ using std::cout;
 using std::endl;
 using std::string;
 
+const float vertical_offset = 0.30;
+const float x_offset = 0.05;
+const float y_offset = 0.05;
+
 sensor_msgs::PointCloud mk_tetrahed();
 sensor_msgs::PointCloud mk_semi_sph(float density, double term_angl);
 sensor_msgs::PointCloud mk_line();
@@ -105,9 +109,9 @@ sensor_msgs::PointCloud mk_semi_sph(float density, double term_angl)
 			//Place a point here if we can
 			p = ((rand() % 100) + 1) / 100.0;
 			if (p <= density){
-				cur_pt.x = radius * sin(i) * cos(j);
-				cur_pt.y = radius * sin(i) * sin(j);
-				cur_pt.z = radius * cos(i);
+				cur_pt.x = radius * sin(i) * cos(j) + x_offset;
+				cur_pt.y = radius * sin(i) * sin(j) + y_offset;
+				cur_pt.z = radius * cos(i) + vertical_offset;
 
 				semi_sph.points.push_back(cur_pt);
 			}

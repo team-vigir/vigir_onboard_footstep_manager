@@ -37,6 +37,8 @@ void MeshBound::constructor_common()
 	centroid = NULL;
 	plane1 = pcl::ModelCoefficients::Ptr();
 	plane2 = pcl::ModelCoefficients::Ptr();
+	//perception_link = "/hokuyo_link";
+	perception_link = "/palm";
 
 	visualization_msgs::Marker marker_type;
 	geometry_msgs::PolygonStamped poly_type;
@@ -446,7 +448,7 @@ Eigen::Vector3d MeshBound::get_camera_position()
 	tf::StampedTransform transform;
 	while (1){
 		try {
-			listener.lookupTransform(fixed_frame.c_str(), "/hokuyo_link",
+			listener.lookupTransform(fixed_frame.c_str(), perception_link.c_str(),
 						ros::Time(0), transform);
 		} catch (tf::TransformException ex){
 			ROS_ERROR("%s", ex.what());

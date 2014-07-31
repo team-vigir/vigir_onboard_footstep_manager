@@ -93,6 +93,7 @@ class MeshBound {
 
 		ros::NodeHandle n;
 		string fixed_frame;
+		string perception_link;
 		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
 		Eigen::Vector3d *centroid;
 		Eigen::Vector3d camera_normal;	//This is a unit vector

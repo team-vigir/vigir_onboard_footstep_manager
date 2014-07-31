@@ -11,17 +11,17 @@
 #include <pcl/features/normal_3d.h>
 #include <pcl/filters/project_inliers.h>
 #include <pcl/common/pca.h>
-//#include <pcl/surface/convex_hull.h>
+#include <pcl/surface/convex_hull.h>
 
 //From Tutorial
-/*#include <pcl/ModelCoefficients.h>
+#include <pcl/ModelCoefficients.h>
 #include <pcl/point_types.h>
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/filters/passthrough.h>
 #include <pcl/filters/project_inliers.h>
 #include <pcl/segmentation/sac_segmentation.h>
-#include <pcl/surface/concave_hull.h>*/
+#include <pcl/surface/concave_hull.h>
 //End tutorial
 
 #include <Eigen/Dense>
@@ -50,10 +50,11 @@ class MeshMaker{
 	private:
 		void init_input_topic();
 		void init_mesh_name();
+		pcl::PolygonMesh::Ptr mk_mesh(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
 		void convert_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg);
-        bool get_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg, pcl::PointCloud<pcl::PointXYZ>::Ptr intermediate_cloud);
-        bool is_valid_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
-        geometry_msgs::PoseStamped get_wrist_orientation(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
+	        bool get_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg, pcl::PointCloud<pcl::PointXYZ>::Ptr intermediate_cloud);
+	        bool is_valid_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+	        geometry_msgs::PoseStamped get_wrist_orientation(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
 		Eigen::Matrix3d get_principal_axes(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
 		
 		ros::NodeHandle n;
@@ -80,42 +81,43 @@ int main (int argc, char** argv){
 
 	return 0;
 }
-/*
+
 //Ought to work. Untested because qhull libraries were insufficient.
 //  Requires precisely Qhulllib5 (2011.1)
-pcl::PolygonMesh::Ptr mk_mesh(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
+pcl::PolygonMesh::Ptr MeshMaker::mk_mesh(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 {
 
-//See PCL Concave Hull tutorial for filters
-cout << "No filters for pointcloud. Is it filtered?" << endl;
+	//See PCL Concave Hull tutorial for filters
+	//cout << "No filters for pointcloud. Is it filtered?" << endl;
+	
+	pcl::PolygonMesh::Ptr output (new pcl::PolygonMesh);
+	vector<pcl::Vertices> polygons;
+	pcl::PointCloud<pcl::PointXYZ> points;
 
-pcl::PolygonMesh::Ptr output (new pcl::PolygonMesh);
-vector<pcl::Vertices> polygons;
-pcl::PointCloud<pcl::PointXYZ> points;
+	pcl::ConvexHull<pcl::PointXYZ> hull;
+	hull.setInputCloud(cloud);
+	hull.reconstruct(*output);
 
-pcl::ConvexHull<pcl::PointXYZ> hull;
-hull.setInputCloud(cloud);
-hull.reconstruct(output);
+	output->header.stamp = 1;
+	output->header.frame_id = visualization_ref_frame;
 
-output->header.seq = 0;
-output->header.stamp = 1;
-output->header.frame_id = "/world";
-
-// Finish
-return output;
+	// Finish
+	return output;
 }
-*/
 
 
 MeshMaker::MeshMaker()
 {
 	visualization_ref_frame = "/world";
-	view = new Hullify_View("convex_hull/", &visualization_ref_frame);
-	bounds = new MeshBound(visualization_ref_frame, view);
 	//cout << "Hi Jack!" << endl;
 	cout << "Currently, this program has minimal validation. Please input"
 		<< "\n\tvalid filenames and locations when prompted." << endl;
 	
+	cout << "Please input the frame of reference for everything: ";
+	cin >> visualization_ref_frame;
+	view = new Hullify_View("convex_hull/", &visualization_ref_frame);
+	bounds = new MeshBound(visualization_ref_frame, view);
+
 	init_input_topic();
 	init_mesh_name();
 
@@ -219,7 +221,7 @@ void MeshMaker::convert_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg)
 	pcl::PolygonMesh::Ptr convex_hull = qhull.mk_mesh(intermediate_cloud);
 
 	//In a system where qHull (libqhull5) is v2011.1, the below should work (untested).
-	//pcl::PolygonMesh::Ptr out_poly = mk_mesh(intermediate_cloud);
+	//pcl::PolygonMesh::Ptr convex_hull = mk_mesh(intermediate_cloud);
 	
 	//Get plane and centroid
 	bounds->set_input_cloud(intermediate_cloud);
@@ -303,18 +305,18 @@ geometry_msgs::PoseStamped MeshMaker::get_wrist_orientation(pcl::PointCloud<pcl:
 	reference_axes.z_axis = Eigen::Vector3d(0, 0, 1);
 
 	Eigen::Matrix3d principal_axes = get_principal_axes(pts_in_question);
-	goal_axes.x_axis = principal_axes.col(1);
-	goal_axes.y_axis = principal_axes.col(2);
-	goal_axes.z_axis = principal_axes.col(0);
+	goal_axes.x_axis = principal_axes.col(2);
+	goal_axes.y_axis = principal_axes.col(0);
+	goal_axes.z_axis = principal_axes.col(1);
 
 	Eigen::Vector3d camera_normal = bounds->get_camera_normal_vec();
-	if (acos(camera_normal.dot(goal_axes.x_axis) / (camera_normal.norm() * goal_axes.x_axis.norm())) > M_PI/4){
-		goal_axes.x_axis = -goal_axes.x_axis;
+	if (acos(camera_normal.dot(goal_axes.z_axis) / (camera_normal.norm() * goal_axes.z_axis.norm())) < M_PI/4){
+		goal_axes.z_axis = -goal_axes.z_axis;
 		goal_axes.y_axis = -goal_axes.y_axis;
 	}
 
 	Eigen::Quaterniond pose_quat = get_axes_transformation(reference_axes, goal_axes);
-	Eigen::Vector3d offset = (goal_axes.x_axis / goal_axes.x_axis.norm()) * 0.03; //Offset by 3 centimeters out of palm.
+	Eigen::Vector3d offset = -(goal_axes.z_axis / goal_axes.z_axis.norm()) * 0.03; //Offset by 3 centimeters out of palm.
 
 	return view->mk_pose_msg(pose_quat, bounds->get_centroid() + offset);
 }

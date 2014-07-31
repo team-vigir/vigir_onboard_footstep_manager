@@ -1,5 +1,0 @@
-<launch>
-	<node name = "hull_tests" pkg = "hullify" output = "screen" launch-prefix = "xterm -e" />
-	<node name = "convex_hull" pkg = "hullify" output = "screen" launch-prefix = "xterm -e" />
-	<node name = "rviz" pkg = "rviz" args = " args="-d $(find hullify)/full_display.rviz"" />
-</launch>
