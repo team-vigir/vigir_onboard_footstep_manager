@@ -9,6 +9,7 @@
 
 #include <moveit_msgs/AttachedCollisionObject.h>
 #include <moveit_msgs/CollisionObject.h>
+#include <moveit_msgs/PlanningScene.h>
 
 #include <iostream>
 #include <string>
@@ -36,6 +37,8 @@ private:
 	void init_mk_movement_msg_template();
 	void set_hand_goal();
 	void display_arm_trajectory();
+	void add_table();
+	moveit_msgs::AttachedCollisionObject mk_table();
 
 	ros::NodeHandle node_handle;
 	moveit::planning_interface::MoveGroup group;
@@ -46,6 +49,7 @@ private:
 	osu_ros_adept::robot_movement_command movement_msg;
 
 	ros::Publisher display_publisher;
+	ros::Publisher planning_scene_diff_publisher;
 	ros::ServiceClient action_request;
 	moveit_msgs::DisplayTrajectory display_trajectory;
 
@@ -87,7 +91,14 @@ AdeptInterface::AdeptInterface()
 {
 	display_publisher = node_handle.advertise<moveit_msgs::DisplayTrajectory>("/move_group/jc_planned_path", 1, true);
 	action_request = node_handle.serviceClient<osu_ros_adept::robot_movement_command>("send_robot_movements");
-	
+	planning_scene_diff_publisher = node_handle.advertise<moveit_msgs::PlanningScene>("planning_scene", 1);
+	while(planning_scene_diff_publisher.getNumSubscribers() < 1)
+	{
+	  ros::WallDuration sleep_t(0.5);
+	  sleep_t.sleep();    
+	}
+	add_table();
+
 	cout << "Reference frame: " << group.getPlanningFrame() << endl;
 	cout << "End effector: " << group.getEndEffectorLink() << endl;
 
@@ -111,6 +122,49 @@ void AdeptInterface::init_mk_movement_msg_template()
 	movement_msg.request.command = 0;
 	movement_msg.request.reply = 0;
 	movement_msg.request.unused = 0;	
+}
+
+void AdeptInterface::add_table()
+{
+	moveit_msgs::AttachedCollisionObject table = mk_table();
+	moveit_msgs::PlanningScene planning_scene;
+	planning_scene.world.collision_objects.push_back(table.object);
+	planning_scene.is_diff = true;
+	planning_scene_diff_publisher.publish(planning_scene); 
+	
+	cout << "Posted the table." << endl;
+}
+
+moveit_msgs::AttachedCollisionObject AdeptInterface::mk_table()
+{
+	double table_depth = 0.02;
+	double table_length = 3;
+	double table_width = 3;
+
+	moveit_msgs::AttachedCollisionObject attached_object;
+	attached_object.link_name = "Adept_Viper_s650_Link1";
+	attached_object.object.header.frame_id = "Adept_Viper_s650_Link1";
+	attached_object.object.id = "box";
+	
+	geometry_msgs::Pose pose;
+	pose.orientation.w = 1.0;
+	pose.orientation.x = pose.orientation.y = pose.orientation.z = 0;
+	pose.position.z = -table_depth;
+	pose.position.x = pose.position.y = 0;
+
+
+	shape_msgs::SolidPrimitive primitive;
+	primitive.type = primitive.BOX;  
+	primitive.dimensions.resize(3);
+	primitive.dimensions[0] = table_length;
+	primitive.dimensions[1] = table_width;
+	primitive.dimensions[2] = table_depth;  
+	
+	attached_object.object.primitives.push_back(primitive);
+	attached_object.object.primitive_poses.push_back(pose);
+	attached_object.object.operation = attached_object.object.ADD;
+
+	return attached_object;
 }
 
 void AdeptInterface::recv_new_hand_goal(const geometry_msgs::PoseStamped::ConstPtr& goal)
