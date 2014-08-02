@@ -32,21 +32,23 @@ public:
 	~AdeptInterface();
 
 	void move_hand();
-	void recv_new_hand_goal(const geometry_msgs::PoseStamped::ConstPtr& goal);
+	void set_hand_goal(const geometry_msgs::PoseStamped::ConstPtr& goal);
+	void print_current_physical_joint_state();
+
 private:
 	void init_mk_movement_msg_template();
-	void set_hand_goal();
-	void display_arm_trajectory();
 	void add_table();
 	moveit_msgs::AttachedCollisionObject mk_table();
+	void display_arm_trajectory();
+	void plan_to_new_goal();
+	void get_end_state(osu_ros_adept::robot_movement_command& movement_msg);
 
 	ros::NodeHandle node_handle;
 	moveit::planning_interface::MoveGroup group;
 	moveit::planning_interface::MoveGroup::Plan adept_plan;
-	bool has_new_goal;
-	geometry_msgs::PoseStamped::Ptr current_goal;
 	AdeptJoint* robot_joints;
 	osu_ros_adept::robot_movement_command movement_msg;
+	bool has_new_goal;
 
 	ros::Publisher display_publisher;
 	ros::Publisher planning_scene_diff_publisher;
@@ -55,11 +57,7 @@ private:
 
 };
 
-void get_hand_pose_request(const geometry_msgs::PoseStamped::ConstPtr& msg);
-//void print_end_state(moveit_msgs::DisplayTrajectory& the_plan);
-void print_joint_state(moveit::planning_interface::MoveGroup& joint_group);
-void get_end_state(moveit_msgs::DisplayTrajectory& the_plan, AdeptJoint* robot_joints, osu_ros_adept::robot_movement_command& movement_msg);
-
+void recv_hand_pose_request(const geometry_msgs::PoseStamped::ConstPtr& msg);
 
 AdeptInterface *adept;
 
@@ -70,7 +68,7 @@ int main(int argc, char **argv){
   	spinner.start();
 
 	adept = new AdeptInterface();
-	ros::Subscriber position_info = node_handle.subscribe("/convex_hull/adept_wrist_orientation", 1, get_hand_pose_request);
+	ros::Subscriber position_info = node_handle.subscribe("/convex_hull/adept_wrist_orientation", 1, recv_hand_pose_request);
 
 	ros::Duration wait_period(0.2);
 	while(ros::ok()){
@@ -81,22 +79,16 @@ int main(int argc, char **argv){
 	return 0;
 }
 
-void get_hand_pose_request(const geometry_msgs::PoseStamped::ConstPtr& msg)
+void recv_hand_pose_request(const geometry_msgs::PoseStamped::ConstPtr& msg)
 {
-	adept->recv_new_hand_goal(msg);
+	adept->set_hand_goal(msg);
 }
 
 AdeptInterface::AdeptInterface()
-:group("adept_arm"), current_goal(new geometry_msgs::PoseStamped)
+:group("adept_arm")
 {
 	display_publisher = node_handle.advertise<moveit_msgs::DisplayTrajectory>("/move_group/jc_planned_path", 1, true);
 	action_request = node_handle.serviceClient<osu_ros_adept::robot_movement_command>("send_robot_movements");
-	planning_scene_diff_publisher = node_handle.advertise<moveit_msgs::PlanningScene>("planning_scene", 1);
-	while(planning_scene_diff_publisher.getNumSubscribers() < 1)
-	{
-	  ros::WallDuration sleep_t(0.5);
-	  sleep_t.sleep();    
-	}
 	add_table();
 
 	cout << "Reference frame: " << group.getPlanningFrame() << endl;
@@ -126,13 +118,21 @@ void AdeptInterface::init_mk_movement_msg_template()
 
 void AdeptInterface::add_table()
 {
+	planning_scene_diff_publisher = node_handle.advertise<moveit_msgs::PlanningScene>("planning_scene", 1);
+	while(planning_scene_diff_publisher.getNumSubscribers() < 1)
+	{
+	  ros::WallDuration sleep_t(0.5);
+	  sleep_t.sleep();    
+	}
+
 	moveit_msgs::AttachedCollisionObject table = mk_table();
+	
 	moveit_msgs::PlanningScene planning_scene;
 	planning_scene.world.collision_objects.push_back(table.object);
 	planning_scene.is_diff = true;
 	planning_scene_diff_publisher.publish(planning_scene); 
 	
-	cout << "Posted the table." << endl;
+	//cout << "Posted the table." << endl;
 }
 
 moveit_msgs::AttachedCollisionObject AdeptInterface::mk_table()
@@ -167,9 +167,13 @@ moveit_msgs::AttachedCollisionObject AdeptInterface::mk_table()
 	return attached_object;
 }
 
-void AdeptInterface::recv_new_hand_goal(const geometry_msgs::PoseStamped::ConstPtr& goal)
+void AdeptInterface::set_hand_goal(const geometry_msgs::PoseStamped::ConstPtr& goal)
 {
-	*current_goal = *goal;
+	cout << "programmatic_moveit read position: x- " << goal->pose.position.x 
+		<< " y- " << goal->pose.position.y << " z- " << goal->pose.position.z << endl;
+	
+	group.setPoseTarget(goal->pose);
+	
 	has_new_goal = true;
 }
 
@@ -177,23 +181,19 @@ void AdeptInterface::move_hand()
 {
 	if (has_new_goal == false){
 		return;
+	
 	} else {
+		plan_to_new_goal();
 		has_new_goal = false;
 	}
-	
-	set_hand_goal();
-	
-	cout << "Beginning to plan." << endl;
-	bool victory = group.plan(adept_plan);
-	cout << "Finished planning." << endl;
-	if (victory){
-		cout << "Planning registered. New end effector positions:" << endl;
-		print_joint_state(group);
+}
+
+void AdeptInterface::plan_to_new_goal()
+{
+	if (group.plan(adept_plan)){
+		cout << "Planning registered." << endl;
 		display_arm_trajectory();
-		sleep(1);	
-		//const robot_state::RobotState state = group.getJointValueTarget();
-		//state.printStatePositions();
-		get_end_state(display_trajectory, robot_joints, movement_msg);
+		get_end_state(movement_msg);
 
 		action_request.call(movement_msg);
 		cout << "Bytes sent: " << movement_msg.response.bytes_sent << endl;
@@ -204,19 +204,10 @@ void AdeptInterface::move_hand()
 	}
 }
 
-void AdeptInterface::set_hand_goal()
+void AdeptInterface::print_current_physical_joint_state()
 {
-	//group.setPositionTarget(current_goal->pose.position.x, current_goal->pose.position.y, current_goal->pose.position.z);
-	cout << "programmatic_moveit read position: x- " << current_goal->pose.position.x 
-		<< " y- " << current_goal->pose.position.y << " z- " << current_goal->pose.position.z << endl;
-	
-	group.setPoseTarget(current_goal->pose);
-}
-
-void print_joint_state(moveit::planning_interface::MoveGroup& joint_group)
-{
-	vector<string> joint_names = joint_group.getJoints();
-	vector<double> joint_positions = joint_group.getCurrentJointValues();
+	vector<string> joint_names = group.getJoints();
+	vector<double> joint_positions = group.getCurrentJointValues();
 
 	cout << "Current joint values:" << endl;
 	long num_joints = joint_names.size();
@@ -232,13 +223,12 @@ void AdeptInterface::display_arm_trajectory()
 	display_publisher.publish(display_trajectory);
 }
 
-void get_end_state(moveit_msgs::DisplayTrajectory& the_plan, AdeptJoint* robot_joints, osu_ros_adept::robot_movement_command& movement_msg)
+void AdeptInterface::get_end_state(osu_ros_adept::robot_movement_command& movement_msg)
 {
-	int final_traj_idx = the_plan.trajectory.size() - 1;
-	long final_pos_idx = the_plan.trajectory[final_traj_idx].joint_trajectory.points.size() - 1;
-	int num_joints = the_plan.trajectory[final_traj_idx].joint_trajectory.points[1].positions.size();
+	long final_pos_idx = adept_plan.trajectory_.joint_trajectory.points.size() - 1;
+	int num_joints = adept_plan.trajectory_.joint_trajectory.points[1].positions.size();
 
-	trajectory_msgs::JointTrajectory* traj = &(the_plan.trajectory[final_traj_idx].joint_trajectory);
+	trajectory_msgs::JointTrajectory* traj = &(adept_plan.trajectory_.joint_trajectory);
 	cout << "Num joints: " << num_joints << endl;
 	for (int i = 0; i < num_joints; ++i){
 		robot_joints[i].name = traj->joint_names[i]; 
