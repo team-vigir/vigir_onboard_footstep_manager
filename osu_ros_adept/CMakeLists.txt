@@ -114,7 +114,8 @@ include_directories(
 # )
 
 ## Declare a cpp executable
-# add_executable(osu_ros_adept_node src/osu_ros_adept_node.cpp)
+#add_executable(controller_comm_client.py scripts/controller_comm_client.py)  
+#add_executable(manual_entry.py scripts/manual_entry.py)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
