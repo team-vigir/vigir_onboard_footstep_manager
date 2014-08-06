@@ -3,26 +3,26 @@ atlas_control:
   left_arm_position_trajectory_controller:
     type: "position_controllers/JointTrajectoryController"
     joints:
-      - l_arm_usy
+      - l_arm_shy
       - l_arm_shx
       - l_arm_ely
       - l_arm_elx
-      - l_arm_uwy
-      - l_arm_mwx
+      - l_arm_wry
+      - l_arm_wrx
 
   right_arm_position_trajectory_controller:
     type: "position_controllers/JointTrajectoryController"
     joints:
-      - r_arm_usy
+      - r_arm_shy
       - r_arm_shx
       - r_arm_ely
       - r_arm_elx
-      - r_arm_uwy
-      - r_arm_mwx
+      - r_arm_wry
+      - r_arm_wrx
       
   torso_position_trajectory_controller:
     type: "position_controllers/JointTrajectoryController"
     joints:
-      - back_lbz
-      - back_mby
-      - back_ubx
+      - back_bkz
+      - back_bky
+      - back_bkx
