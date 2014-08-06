@@ -1,5 +1,5 @@
 # position controllers ---------------------------------------
-
+atlas_control:
   back_lbz_position_controller:
     type: position_controllers/JointPositionController
     joint: back_lbz
