@@ -14,7 +14,7 @@ using std::cout;
 using std::endl;
 using std::string;
 
-const float vertical_offset = 0.30;
+const float vertical_offset = 0.35;
 const float x_offset = 0.05;
 const float y_offset = 0.05;
 
