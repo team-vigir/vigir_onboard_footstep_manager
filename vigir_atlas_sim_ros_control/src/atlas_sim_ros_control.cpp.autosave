@@ -128,7 +128,7 @@ Atlas_Sim_Ros_Control::Atlas_Sim_Ros_Control()
   jointcommands.name.push_back("atlas::l_arm_shx");
   jointcommands.name.push_back("atlas::l_arm_ely");
   jointcommands.name.push_back("atlas::l_arm_elx");
-  jointcommands.name.push_back("atlas::l_arm_uwy");
+  jointcommands.name.push_back("atlas::l_arm_uwy"
   jointcommands.name.push_back("atlas::l_arm_mwx");
   jointcommands.name.push_back("atlas::r_arm_usy");
   jointcommands.name.push_back("atlas::r_arm_shx");

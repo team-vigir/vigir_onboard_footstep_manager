@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- send lwa4p urdf to param server -->
+    <!--<param name="robot_description" command="$(find xacro)/xacro.py '$(find schunk_lwa4p_control)/urdf/lwa4p.urdf.xacro'" />-->
+        
+    <!-- robot state publisher -->
+    <!--<node pkg="robot_state_publisher" type="state_publisher" name="robot_state_publisher"/>-->
+        
+    <node name="atlas_sim_ros_control" pkg="vigir_atlas_sim_ros_control" type="atlas_sim_ros_control_node" output="screen">          
+        <!-- parameters for canopenmaster node -->
+        <!--<rosparam command="load" ns="canopen" file="$(find schunk_lwa4p_control)/config/canopen.yaml" />-->
+
+        <!-- parameter description of the CAN modules and for the corresponding trajectory controller -->
+        <!--<rosparam command="load" ns="arm_controller" file="$(find schunk_lwa4p_control)/config/controller.yaml" />-->
+        
+        <!--<param name="wsg_gripper/default_effort" value="30.0" />-->
+    </node>
+            
+    <rosparam file="$(find vigir_atlas_sim_ros_control)/config/position_controllers.yaml" command="load"/>
+    <node name="position_controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" ns="atlas_control" args="back_lbz_position_controller back_mby_position_controller back_ubx_position_controller neck_ay_position_controller l_leg_uhz_position_controller l_leg_mhx_position_controller l_leg_lhy_position_controller l_leg_kny_position_controller l_leg_uay_position_controller l_leg_lax_position_controller r_leg_uhz_position_controller r_leg_mhx_position_controller r_leg_lhy_position_controller r_leg_kny_position_controller r_leg_uay_position_controller r_leg_lax_position_controller l_arm_usy_position_controller l_arm_shx_position_controller l_arm_ely_position_controller l_arm_elx_position_controller l_arm_uwy_position_controller l_arm_mwx_position_controller r_arm_usy_position_controller r_arm_shx_position_controller r_arm_ely_position_controller r_arm_elx_position_controller r_arm_uwy_position_controller r_arm_mwx_position_controller" />
+<!--l_arm_usy_position_controller l_arm_shx_position_controller l_arm_ely_position_controller l_arm_elx_position_controller l_arm_uwy_position_controller l_arm_mwx_position_controller
+r_arm_usy_position_controller r_arm_shx_position_controller r_arm_ely_position_controller r_arm_elx_position_controller r_arm_uwy_position_controller r_arm_mwx_position_controller-->
+<!--    <rosparam file="$(find schunk_lwa4p_control)/config/velocity_trajectory_controller.yaml" command="load"/>
+    <node name="arm_controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="arm_controller" />
+ 
+    <rosparam file="$(find schunk_lwa4p_control)/config/gripper_controller.yaml" command="load"/>
+    <node name="gripper_controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="gripper_controller" />
+                                                                                                                                                                                                                                        
+    <rosparam file="$(find schunk_lwa4p_control)/config/cartesian_controller.yaml" command="load"/>
+    <node name="cartesian_controller_spawner" pkg="controller_manager" type="spawner" output="screen"  args="++stopped cartesian_controller" />-->
+
+</launch> 
