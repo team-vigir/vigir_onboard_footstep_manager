@@ -46,6 +46,7 @@ namespace Atlas_Sim_Ros_Control
 
   void Atlas_Sim_Ros_Control::jointStatesCb(const sensor_msgs::JointState::ConstPtr &_js)
   {
+    // We don´t know how our joint state looks like till we received the first instance of it, so we initialize the hardware interface here
     if (joint_state_.name.size() == 0){
       joint_state_ = *_js;
 
@@ -64,36 +65,17 @@ namespace Atlas_Sim_Ros_Control
 
       registerInterface(&joint_state_interface_);
       registerInterface(&position_joint_interface_);
-      //ROS_INFO("Registered hardware interfaces");
-
-
     }else{
 
       joint_state_ = *_js;
-      //std::cout << "bla" << "\n";
-      //ROS_INFO("Registered hardwaresfdg interfaces");
-    }
-    /*
-    static ros::Time startTime = ros::Time::now();
-    {
-      // for testing round trip time
-      jointcommands.header.stamp = _js->header.stamp;
 
-      // assign sinusoidal joint angle targets
-      for (unsigned int i = 0; i < jointcommands.name.size(); i++)
-        jointcommands.position[i] =
-          3.2* sin((ros::Time::now() - startTime).toSec());
-
-      pub_joint_commands_.publish(jointcommands);
     }
-    */
+
   }
 
 
 Atlas_Sim_Ros_Control::Atlas_Sim_Ros_Control()
 {
-  //ros::init(argc, argv, "pub_joint_command_test");
-
   ros::NodeHandle* rosnode = new ros::NodeHandle();
 
   rosnode->setCallbackQueue(&subscriber_queue_);
@@ -199,51 +181,6 @@ Atlas_Sim_Ros_Control::Atlas_Sim_Ros_Control()
   subscriber_spinner_.reset(new ros::AsyncSpinner(1, &subscriber_queue_));
   subscriber_spinner_->start();
 
-
-
-  /*
-    joint_name_vector_.push_back("joint_0");
-    joint_name_vector_.push_back("joint_1");
-    joint_name_vector_.push_back("joint_2");
-    joint_name_vector_.push_back("joint_3");
-    joint_name_vector_.push_back("joint_4");
-    joint_name_vector_.push_back("joint_5");
-
-    joint_offset["joint_0"] = 0.1380582709097077;
-    joint_offset["joint_1"] = -1.1249192444494702;
-    joint_offset["joint_2"] = 1.4828480949561198;
-    joint_offset["joint_3"] = 0.5011003907093095;
-    joint_offset["joint_4"] = 0.4346278899009317;
-    joint_offset["joint_5"] = 0;
-
-  for(unsigned int i=0; i<joint_name_vector_.size(); i++)
-    {
-        joint_positions_[joint_name_vector_[i]] = 0.0;
-        joint_velocitys_[joint_name_vector_[i]] = 0.0;
-        joint_efforts_[joint_name_vector_[i]] = 0.0;
-
-        joint_cmd_pubs_[joint_name_vector_[i]] = nh_.advertise<std_msgs::Float64>("/" + joint_name_vector_[i] + "/command", 5);
-
-        ros::Subscriber sub = nh_.subscribe("/" + joint_name_vector_[i] + "/state", 1, &Atlas_Sim_Ros_Control::jointStateCallback, this);
-        joint_state_subs_[joint_name_vector_[i]] = sub;
-
-        nh_.setCallbackQueue(&subscriber_queue_);
-
-        hardware_interface::JointStateHandle state_handle(joint_name_vector_[i], &joint_positions_[joint_name_vector_[i]], &joint_velocitys_[joint_name_vector_[i]], &joint_efforts_[joint_name_vector_[i]]);
-        joint_state_interface_.registerHandle(state_handle);
-
-        hardware_interface::JointHandle pos_handle(joint_state_interface_.getHandle(joint_name_vector_[i]), &joint_pos_cmds_[joint_name_vector_[i]]);
-        position_joint_interface_.registerHandle(pos_handle);
-    }
-
-    registerInterface(&joint_state_interface_);
-    registerInterface(&position_joint_interface_);
-
-    subscriber_spinner_.reset(new ros::AsyncSpinner(1, &subscriber_queue_));
-    subscriber_spinner_->start();
-
-    _fake_dof_value = 0.0;
-    */
 }
 
 void Atlas_Sim_Ros_Control::cleanup()
