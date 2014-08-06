@@ -68,6 +68,7 @@ namespace Atlas_Sim_Ros_Control
 
 
     }else{
+
       joint_state_ = *_js;
       //std::cout << "bla" << "\n";
       //ROS_INFO("Registered hardwaresfdg interfaces");
@@ -177,7 +178,7 @@ Atlas_Sim_Ros_Control::Atlas_Sim_Ros_Control()
   ros::SubscribeOptions jointStatesSo =
     ros::SubscribeOptions::create<sensor_msgs::JointState>(
     "/atlas/joint_states", 1,boost::bind(&Atlas_Sim_Ros_Control::jointStatesCb, this, _1),
-    ros::VoidPtr(), &subscriber_queue_);
+    ros::VoidPtr(), rosnode->getCallbackQueue());
 
   // Because TCP causes bursty communication with high jitter,
   // declare a preference on UDP connections for receiving
@@ -187,7 +188,7 @@ Atlas_Sim_Ros_Control::Atlas_Sim_Ros_Control()
   // we just prefer UDP.
   jointStatesSo.transport_hints = ros::TransportHints().unreliable();
 
-  ros::Subscriber subJointStates = rosnode->subscribe(jointStatesSo);
+  subJointStates_ = rosnode->subscribe(jointStatesSo);
   // ros::Subscriber subJointStates =
   //   rosnode->subscribe("/atlas/joint_states", 1000, SetJointStates);
 
@@ -296,8 +297,8 @@ try{
 
         controller_manager::ControllerManager cm(&atlas_sim_ros_control_interface);
 
-        ros::AsyncSpinner spinner(4);
-        spinner.start();
+        //ros::AsyncSpinner spinner(4);
+        //spinner.start();
 
         ros::Rate loop_rate(50);
 

@@ -96,6 +96,7 @@ private:
 
     osrf_msgs::JointCommands jointcommands;
     ros::Publisher pub_joint_commands_;
+    ros::Subscriber subJointStates_;
 
     //sensor_msgs::JointStateConstPtr joint_state_;
     sensor_msgs::JointState joint_state_;
