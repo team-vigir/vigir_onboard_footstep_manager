@@ -113,6 +113,8 @@ target_link_libraries(atlas_sim_ros_control_node
   ${catkin_LIBRARIES}
 )
 
+add_dependencies(atlas_sim_ros_control_node ${catkin_EXPORTED_TARGETS})
+
 #############
 ## Install ##
 #############

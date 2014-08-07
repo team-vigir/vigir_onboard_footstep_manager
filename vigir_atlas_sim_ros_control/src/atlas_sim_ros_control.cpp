@@ -90,34 +90,34 @@ Atlas_Sim_Ros_Control::Atlas_Sim_Ros_Control()
   }
 
   // must match those inside AtlasPlugin
-  jointcommands.name.push_back("atlas::back_lbz");
-  jointcommands.name.push_back("atlas::back_mby");
-  jointcommands.name.push_back("atlas::back_ubx");
-  jointcommands.name.push_back("atlas::neck_ay");
-  jointcommands.name.push_back("atlas::l_leg_uhz");
-  jointcommands.name.push_back("atlas::l_leg_mhx");
-  jointcommands.name.push_back("atlas::l_leg_lhy");
+  jointcommands.name.push_back("atlas::back_bkx");
+  jointcommands.name.push_back("atlas::back_bky");
+  jointcommands.name.push_back("atlas::back_bkz");
+  jointcommands.name.push_back("atlas::neck_ry");
+  jointcommands.name.push_back("atlas::l_leg_hpz");
+  jointcommands.name.push_back("atlas::l_leg_hpx");
+  jointcommands.name.push_back("atlas::l_leg_hpy");
   jointcommands.name.push_back("atlas::l_leg_kny");
-  jointcommands.name.push_back("atlas::l_leg_uay");
-  jointcommands.name.push_back("atlas::l_leg_lax");
-  jointcommands.name.push_back("atlas::r_leg_uhz");
-  jointcommands.name.push_back("atlas::r_leg_mhx");
-  jointcommands.name.push_back("atlas::r_leg_lhy");
+  jointcommands.name.push_back("atlas::l_leg_aky");
+  jointcommands.name.push_back("atlas::l_leg_akx");
+  jointcommands.name.push_back("atlas::r_leg_hpz");
+  jointcommands.name.push_back("atlas::r_leg_hpx");
+  jointcommands.name.push_back("atlas::r_leg_hpy");
   jointcommands.name.push_back("atlas::r_leg_kny");
-  jointcommands.name.push_back("atlas::r_leg_uay");
-  jointcommands.name.push_back("atlas::r_leg_lax");
-  jointcommands.name.push_back("atlas::l_arm_usy");
+  jointcommands.name.push_back("atlas::r_leg_aky");
+  jointcommands.name.push_back("atlas::r_leg_akx");
+  jointcommands.name.push_back("atlas::l_arm_shy");
   jointcommands.name.push_back("atlas::l_arm_shx");
   jointcommands.name.push_back("atlas::l_arm_ely");
   jointcommands.name.push_back("atlas::l_arm_elx");
-  jointcommands.name.push_back("atlas::l_arm_uwy");
-  jointcommands.name.push_back("atlas::l_arm_mwx");
-  jointcommands.name.push_back("atlas::r_arm_usy");
+  jointcommands.name.push_back("atlas::l_arm_wry");
+  jointcommands.name.push_back("atlas::l_arm_wrx");
+  jointcommands.name.push_back("atlas::r_arm_shy");
   jointcommands.name.push_back("atlas::r_arm_shx");
   jointcommands.name.push_back("atlas::r_arm_ely");
   jointcommands.name.push_back("atlas::r_arm_elx");
-  jointcommands.name.push_back("atlas::r_arm_uwy");
-  jointcommands.name.push_back("atlas::r_arm_mwx");
+  jointcommands.name.push_back("atlas::r_arm_wry");
+  jointcommands.name.push_back("atlas::r_arm_wrx");
 
   unsigned int n = jointcommands.name.size();
   jointcommands.position.resize(n);
@@ -135,20 +135,24 @@ Atlas_Sim_Ros_Control::Atlas_Sim_Ros_Control()
     std::vector<std::string> pieces;
     boost::split(pieces, jointcommands.name[i], boost::is_any_of(":"));
 
-    rosnode->getParam("atlas_controller/gains/" + pieces[2] + "/p",
-      jointcommands.kp_position[i]);
+    std::string param_string = "/atlas_controller/gains/" + pieces[2] + "/p";
+    std::cout << param_string << "\n";
 
-    rosnode->getParam("atlas_controller/gains/" + pieces[2] + "/i",
+    rosnode->getParam(param_string,
+      jointcommands.kp_position[i]);
+    //jointcommands.kp_position[i] = 1000.0;
+
+    rosnode->getParam("/atlas_controller/gains/" + pieces[2] + "/i",
       jointcommands.ki_position[i]);
 
-    rosnode->getParam("atlas_controller/gains/" + pieces[2] + "/d",
+    rosnode->getParam("/atlas_controller/gains/" + pieces[2] + "/d",
       jointcommands.kd_position[i]);
 
-    rosnode->getParam("atlas_controller/gains/" + pieces[2] + "/i_clamp",
+    rosnode->getParam("/atlas_controller/gains/" + pieces[2] + "/i_clamp",
       jointcommands.i_effort_min[i]);
     jointcommands.i_effort_min[i] = -jointcommands.i_effort_min[i];
 
-    rosnode->getParam("atlas_controller/gains/" + pieces[2] + "/i_clamp",
+    rosnode->getParam("/atlas_controller/gains/" + pieces[2] + "/i_clamp",
       jointcommands.i_effort_max[i]);
 
     jointcommands.velocity[i]     = 0;
