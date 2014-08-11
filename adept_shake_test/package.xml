@@ -1,25 +1,25 @@
 <?xml version="1.0"?>
 <package>
-  <name>moveit_int</name>
+  <name>adept_shake_test</name>
   <version>0.0.0</version>
-  <description>The moveit_int package</description>
+  <description>The adept_shake_test package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="cartejac@onid.oregonstate.edu">Jackson Carter</maintainer>
+  <maintainer email="eva@todo.todo">eva</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
   <!-- Commonly used license strings: -->
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
-  <license>BSD</license>
+  <license>TODO</license>
 
 
   <!-- Url tags are optional, but mutiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/moveit_int</url> -->
+  <!-- <url type="website">http://wiki.ros.org/adept_shake_test</url> -->
 
 
   <!-- Author tags are optional, mutiple are allowed, one per tag -->
@@ -40,16 +40,14 @@
   <!-- Use test_depend for packages you need only for testing: -->
   <!--   <test_depend>gtest</test_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>interactive_markers</build_depend>
-  <build_depend>moveit_core</build_depend>
-  <build_depend>moveit_ros_planning_interface</build_depend>
-  <build_depend>roscpp</build_depend>
+  <build_depend>geometry_msgs</build_depend>
   <build_depend>osu_ros_adept</build_depend>
-  <run_depend>interactive_markers</run_depend>
-  <run_depend>moveit_core</run_depend>
-  <run_depend>moveit_ros_planning_interface</run_depend>
-  <run_depend>roscpp</run_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <run_depend>geometry_msgs</run_depend>
   <run_depend>osu_ros_adept</run_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>std_msgs</run_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

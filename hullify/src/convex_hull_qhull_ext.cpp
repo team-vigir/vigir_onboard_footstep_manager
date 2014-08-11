@@ -140,7 +140,8 @@ void MeshMaker::init_input_topic()
 	while(1){
 		cout << "What is the input pointcloud topic for this meshing node?"
 			<< "\n\t0 - new\n\t1 - /testing/default"
-			<< "\n\t2 - /flor/worldmodel/ocs/dist_query_pointcloud_result: ";
+			<< "\n\t2 - /flor/worldmodel/ocs/dist_query_pointcloud_result"
+			<< "\n\t3 - /kinect/selected_cloud: ";
 		cin >> input;
 
 		if (input == "0"){
@@ -152,6 +153,9 @@ void MeshMaker::init_input_topic()
 
 		} else if (input == "2"){
 			in_topic_name = "/flor/worldmodel/ocs/dist_query_pointcloud_result";
+
+		} else if (input == "3"){
+			in_topic_name = "/kinect/selected_cloud";
 
 		} else {
 			cout << "Invalid entry (must be 0, 1, or 2)" << endl;

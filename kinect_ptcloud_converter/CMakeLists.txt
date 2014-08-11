@@ -1,15 +1,18 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(moveit_int)
+project(kinect_ptcloud_converter)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  interactive_markers
-  moveit_core
-  moveit_ros_planning_interface
+  openni_launch
   roscpp
-  osu_ros_adept
+  rospy
+  sensor_msgs
+  std_msgs
+  tf
+  visualization_msgs
+  geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -69,7 +72,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
+#   sensor_msgs#   std_msgs#   visualization_msgs
 # )
 
 ###################################
@@ -83,8 +86,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES moveit_int
-#  CATKIN_DEPENDS interactive_markers moveit_core moveit_ros_planning_interface roscpp
+#  LIBRARIES kinect_ptcloud_converter
+#  CATKIN_DEPENDS openni_launch roscpp rospy sensor_msgs std_msgs tf visualization_msgs
 #  DEPENDS system_lib
 )
 
@@ -100,23 +103,21 @@ include_directories(
 )
 
 ## Declare a cpp library
-# add_library(moveit_int
-#   src/${PROJECT_NAME}/moveit_int.cpp
+# add_library(kinect_ptcloud_converter
+#   src/${PROJECT_NAME}/kinect_ptcloud_converter.cpp
 # )
 
 ## Declare a cpp executable
-# add_executable(moveit_int_node src/moveit_int_node.cpp)
-
-add_executable(programmatic_moveit src/programmatic_moveit.cpp)
-target_link_libraries(programmatic_moveit ${catkin_LIBRARIES})
-set_target_properties(programmatic_moveit PROPERTIES COMPILE_FLAGS "-Wall -g")
+add_executable(kinect_ptcloud_converter_node src/kinect_ptcloud_node.cpp)
+target_link_libraries(kinect_ptcloud_converter_node ${catkin_LIBRARIES})
+set_target_properties(kinect_ptcloud_converter_node PROPERTIES COMPILE_FLAGS "-Wall -g")
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(moveit_int_node moveit_int_generate_messages_cpp)
+# add_dependencies(kinect_ptcloud_converter_node kinect_ptcloud_converter_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(moveit_int_node
+# target_link_libraries(kinect_ptcloud_converter_node
 #   ${catkin_LIBRARIES}
 # )
 
@@ -135,7 +136,7 @@ set_target_properties(programmatic_moveit PROPERTIES COMPILE_FLAGS "-Wall -g")
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS moveit_int moveit_int_node
+# install(TARGETS kinect_ptcloud_converter kinect_ptcloud_converter_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -160,7 +161,7 @@ set_target_properties(programmatic_moveit PROPERTIES COMPILE_FLAGS "-Wall -g")
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_moveit_int.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_kinect_ptcloud_converter.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

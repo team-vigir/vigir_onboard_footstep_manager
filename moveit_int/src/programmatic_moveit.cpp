@@ -65,6 +65,9 @@ int main(int argc, char **argv){
  	ros::init(argc, argv, "programmatic_moveit");
   	ros::NodeHandle node_handle;
   	ros::AsyncSpinner spinner(1);
+  	
+  	sleep(3);
+
   	spinner.start();
 
 	adept = new AdeptInterface();
@@ -132,7 +135,7 @@ void AdeptInterface::add_table()
 	planning_scene.is_diff = true;
 	planning_scene_diff_publisher.publish(planning_scene); 
 	
-	//cout << "Posted the table." << endl;
+	cout << "Posted the table." << endl;
 }
 
 moveit_msgs::AttachedCollisionObject AdeptInterface::mk_table()
