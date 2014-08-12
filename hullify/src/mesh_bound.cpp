@@ -38,7 +38,7 @@ void MeshBound::constructor_common()
 	plane1 = pcl::ModelCoefficients::Ptr();
 	plane2 = pcl::ModelCoefficients::Ptr();
 	//perception_link = "/hokuyo_link";
-	perception_link = "/palm";
+	perception_link = "/camera_link";
 
 	visualization_msgs::Marker marker_type;
 	geometry_msgs::PolygonStamped poly_type;

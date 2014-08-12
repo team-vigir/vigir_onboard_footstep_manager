@@ -94,6 +94,10 @@ if __name__ == "__main__":
 	shake_right()
 	shake_left()
 	shake_right()
+	shake_left()
+	shake_right()
+	shake_left()
+	shake_right()
 	set_speed(100)
 	shake_home_pos()
 	#print "4"

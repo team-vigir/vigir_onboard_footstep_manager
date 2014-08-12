@@ -53,9 +53,9 @@ void orient_kinect(const string& fixed_frame, const string& camera_frame, double
 KinectAdapter *primary_adapter;
 string tf_world_frame = "adept_combined";
 string camera_base_frame = "camera_link";
-double kinect_x = -0.08; //The approximate location of the depth scanner.
-double kinect_y = -0.25;
-double kinect_z = 0.05;
+double kinect_x = -0.12; //The approximate location of the depth scanner.
+double kinect_y = -0.22;
+double kinect_z = 0.08;
 
 int main(int argc, char** argv){
 	ros::init(argc, argv, "kinect_ptcloud_node");

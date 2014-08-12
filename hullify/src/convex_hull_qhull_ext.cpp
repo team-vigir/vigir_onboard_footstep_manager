@@ -52,9 +52,9 @@ class MeshMaker{
 		void init_mesh_name();
 		pcl::PolygonMesh::Ptr mk_mesh(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
 		void convert_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg);
-	        bool get_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg, pcl::PointCloud<pcl::PointXYZ>::Ptr intermediate_cloud);
-	        bool is_valid_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
-	        geometry_msgs::PoseStamped get_wrist_orientation(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
+	    bool get_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg, pcl::PointCloud<pcl::PointXYZ>::Ptr intermediate_cloud);
+	    bool is_valid_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+	    geometry_msgs::PoseStamped get_wrist_orientation(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
 		Eigen::Matrix3d get_principal_axes(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
 		
 		ros::NodeHandle n;
@@ -131,6 +131,7 @@ MeshMaker::MeshMaker()
 	geometry_msgs::PoseStamped pose_type;
 	view->add_mesh_topic(mesh_base_name);
 	view->add_topic_no_queue("principal_axis", marker_type);
+	view->add_topic_no_queue("end_effector_with_offset", marker_type);
 	view->add_topic_no_queue("adept_wrist_orientation", pose_type);
 }
 
@@ -309,19 +310,20 @@ geometry_msgs::PoseStamped MeshMaker::get_wrist_orientation(pcl::PointCloud<pcl:
 	reference_axes.z_axis = Eigen::Vector3d(0, 0, 1);
 
 	Eigen::Matrix3d principal_axes = get_principal_axes(pts_in_question);
-	goal_axes.x_axis = principal_axes.col(2);
-	goal_axes.y_axis = principal_axes.col(0);
-	goal_axes.z_axis = principal_axes.col(1);
+	goal_axes.x_axis = principal_axes.col(1);
+	goal_axes.y_axis = principal_axes.col(2);
+	goal_axes.z_axis = principal_axes.col(0);
 
 	Eigen::Vector3d camera_normal = bounds->get_camera_normal_vec();
-	if (acos(camera_normal.dot(goal_axes.z_axis) / (camera_normal.norm() * goal_axes.z_axis.norm())) < M_PI/4){
-		goal_axes.z_axis = -goal_axes.z_axis;
+	if (acos(camera_normal.dot(goal_axes.y_axis) / (camera_normal.norm() * goal_axes.y_axis.norm())) < M_PI/2){
+		goal_axes.x_axis = -goal_axes.x_axis;
 		goal_axes.y_axis = -goal_axes.y_axis;
 	}
 
 	Eigen::Quaterniond pose_quat = get_axes_transformation(reference_axes, goal_axes);
-	Eigen::Vector3d offset = -(goal_axes.z_axis / goal_axes.z_axis.norm()) * 0.03; //Offset by 3 centimeters out of palm.
+	Eigen::Vector3d offset = -(goal_axes.y_axis / goal_axes.y_axis.norm()) * 0.08; //Offset by 8 centimeters out of palm.
 
+	view->publish("end_effector_with_offset", view->mk_pt_msg(bounds->get_centroid() + offset));
 	return view->mk_pose_msg(pose_quat, bounds->get_centroid() + offset);
 }
 
