@@ -5,6 +5,6 @@
     </node>
             
     <rosparam file="$(find vigir_atlas_sim_ros_control)/config/trajectory_controllers.yaml" command="load"/>
-    <node name="position_trajectory_controller_spawner" pkg="controller_manager" type="spawner" ns="atlas_control" respawn="false" output="screen" args="left_arm_position_trajectory_controller right_arm_position_trajectory_controller torso_position_trajectory_controller" />
+    <node name="position_trajectory_controller_spawner" pkg="controller_manager" type="spawner" ns="atlas_control" respawn="false" output="screen" args="left_arm_position_trajectory_controller right_arm_position_trajectory_controller torso_position_trajectory_controller left_leg_position_trajectory_controller right_leg_position_trajectory_controller neck_position_trajectory_controller" />
 
 </launch> 

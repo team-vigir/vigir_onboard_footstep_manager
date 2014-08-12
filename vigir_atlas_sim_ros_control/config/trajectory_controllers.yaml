@@ -26,3 +26,28 @@ atlas_control:
       - back_bkz
       - back_bky
       - back_bkx
+      
+  left_leg_position_trajectory_controller:
+    type: "position_controllers/JointTrajectoryController"
+    joints:
+      - l_leg_hpz
+      - l_leg_hpx
+      - l_leg_hpy
+      - l_leg_kny
+      - l_leg_aky
+      - l_leg_akx
+      
+  right_leg_position_trajectory_controller:
+    type: "position_controllers/JointTrajectoryController"
+    joints:
+      - r_leg_hpz
+      - r_leg_hpx
+      - r_leg_hpy
+      - r_leg_kny
+      - r_leg_aky
+      - r_leg_akx
+      
+  neck_position_trajectory_controller:
+    type: "position_controllers/JointTrajectoryController"
+    joints:
+      - neck_ry
