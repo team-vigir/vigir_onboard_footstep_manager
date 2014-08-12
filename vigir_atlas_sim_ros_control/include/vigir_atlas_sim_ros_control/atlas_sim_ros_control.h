@@ -51,6 +51,7 @@
 
 #include <osrf_msgs/JointCommands.h>
 #include <sensor_msgs/JointState.h>
+#include <atlas_msgs/AtlasState.h>
 
 
 namespace Atlas_Sim_Ros_Control
@@ -68,7 +69,7 @@ public:
 
 
 private:
-    void jointStatesCb(const sensor_msgs::JointState::ConstPtr &_js);
+    void atlasStateCb(const atlas_msgs::AtlasState::ConstPtr &_js);
 
     ros::NodeHandle nh_;
 
@@ -99,7 +100,9 @@ private:
     ros::Subscriber subJointStates_;
 
     //sensor_msgs::JointStateConstPtr joint_state_;
+    atlas_msgs::AtlasState atlas_state_;
     sensor_msgs::JointState joint_state_;
+    std::vector<std::string> joint_names_;
 
 };
 

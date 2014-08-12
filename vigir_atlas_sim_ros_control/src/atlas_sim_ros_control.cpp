@@ -40,23 +40,31 @@
 
 #include <controller_manager/controller_manager.h>
 #include <std_msgs/String.h>
+#include <atlas_msgs/AtlasState.h>
 
 namespace Atlas_Sim_Ros_Control
 {
 
-  void Atlas_Sim_Ros_Control::jointStatesCb(const sensor_msgs::JointState::ConstPtr &_js)
+  void Atlas_Sim_Ros_Control::atlasStateCb(const atlas_msgs::AtlasState::ConstPtr &_as)
   {
     // We don´t know how our joint state looks like till we received the first instance of it, so we initialize the hardware interface here
-    if (joint_state_.name.size() == 0){
-      joint_state_ = *_js;
+    if (joint_state_.position.size() == 0){
+      atlas_state_ = *_as;
+
+      for(size_t i = 0; i < atlas_state_.position.size(); ++i){
+        joint_state_.position.push_back(atlas_state_.position[i]);
+        joint_state_.velocity.push_back(atlas_state_.velocity[i]);
+        joint_state_.effort.push_back(atlas_state_.effort[i]);
+        joint_state_.name.push_back(joint_names_[i]);
+      }
 
 
-      for (size_t i = 0; i < joint_state_.name.size(); ++i){
-        hardware_interface::JointStateHandle state_handle(joint_state_.name[i], &joint_state_.position[i], &joint_state_.velocity[i], &joint_state_.velocity[i]);
+      for (size_t i = 0; i < joint_state_.position.size(); ++i){
+        hardware_interface::JointStateHandle state_handle(joint_names_[i], &joint_state_.position[i], &joint_state_.velocity[i], &joint_state_.velocity[i]);
         joint_state_interface_.registerHandle(state_handle);
 
 
-        hardware_interface::JointHandle pos_handle(joint_state_interface_.getHandle(joint_state_.name[i]), &jointcommands.position[i]);
+        hardware_interface::JointHandle pos_handle(joint_state_interface_.getHandle(joint_names_[i]), &jointcommands.position[i]);
         position_joint_interface_.registerHandle(pos_handle);
 
         jointcommands.position[i] = joint_state_.position[i];
@@ -67,7 +75,13 @@ namespace Atlas_Sim_Ros_Control
       registerInterface(&position_joint_interface_);
     }else{
 
-      joint_state_ = *_js;
+      atlas_state_ = *_as;
+
+      for(size_t i = 0; i < atlas_state_.position.size(); ++i){
+        joint_state_.position[i] = (atlas_state_.position[i]);
+        joint_state_.velocity[i] = (atlas_state_.velocity[i]);
+        joint_state_.effort[i] = (atlas_state_.effort[i]);
+      }
 
     }
 
@@ -136,7 +150,8 @@ Atlas_Sim_Ros_Control::Atlas_Sim_Ros_Control()
     boost::split(pieces, jointcommands.name[i], boost::is_any_of(":"));
 
     std::string param_string = "/atlas_controller/gains/" + pieces[2] + "/p";
-    std::cout << param_string << "\n";
+    //std::cout << param_string << "\n";
+    joint_names_.push_back(pieces[2]);
 
     rosnode->getParam(param_string,
       jointcommands.kp_position[i]);
@@ -162,8 +177,8 @@ Atlas_Sim_Ros_Control::Atlas_Sim_Ros_Control()
 
   // ros topic subscribtions
   ros::SubscribeOptions jointStatesSo =
-    ros::SubscribeOptions::create<sensor_msgs::JointState>(
-    "/atlas/joint_states", 1,boost::bind(&Atlas_Sim_Ros_Control::jointStatesCb, this, _1),
+    ros::SubscribeOptions::create<atlas_msgs::AtlasState>(
+    "/atlas/atlas_state", 1,boost::bind(&Atlas_Sim_Ros_Control::atlasStateCb, this, _1),
     ros::VoidPtr(), rosnode->getCallbackQueue());
 
   // Because TCP causes bursty communication with high jitter,
