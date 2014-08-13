@@ -43,6 +43,8 @@
 #include <hardware_interface/joint_command_interface.h>
 #include <hardware_interface/joint_state_interface.h>
 #include <hardware_interface/force_torque_sensor_interface.h>
+#include <hardware_interface/imu_sensor_interface.h>
+
 
 #include <joint_limits_interface/joint_limits_interface.h>
 #include <hardware_interface/robot_hw.h>
@@ -92,7 +94,10 @@ private:
 
     hardware_interface::JointStateInterface joint_state_interface_;
     hardware_interface::PositionJointInterface position_joint_interface_;
+    hardware_interface::VelocityJointInterface velocity_joint_interface_;
+    hardware_interface::EffortJointInterface effort_joint_interface_;
     hardware_interface::ForceTorqueSensorInterface force_torque_sensor_interface_;
+    hardware_interface::ImuSensorInterface imu_sensor_interface_;
 
 
     double _fake_dof_value;
@@ -113,7 +118,7 @@ private:
     double right_hand_force_[3];
     double right_hand_torque_[3];
 
-
+    hardware_interface::ImuSensorHandle::Data imu_sensor_data_;
 };
 
 }

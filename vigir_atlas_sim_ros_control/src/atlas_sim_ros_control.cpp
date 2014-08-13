@@ -49,6 +49,7 @@ namespace Atlas_Sim_Ros_Control
   void Atlas_Sim_Ros_Control::atlasStateCb(const atlas_msgs::AtlasState::ConstPtr &_as)
   {
     // We don´t know how our joint state looks like till we received the first instance of it, so we initialize the hardware interface here
+    // This is only because we´re running in Gazebo and lazy. On real robot, the hardware interface has to be setup during initialization
     if (joint_state_.position.size() == 0){
       atlas_state_ = *_as;
 
@@ -68,12 +69,20 @@ namespace Atlas_Sim_Ros_Control
         hardware_interface::JointHandle pos_handle(joint_state_interface_.getHandle(joint_names_[i]), &jointcommands.position[i]);
         position_joint_interface_.registerHandle(pos_handle);
 
+        hardware_interface::JointHandle vel_handle(joint_state_interface_.getHandle(joint_names_[i]), &jointcommands.velocity[i]);
+        velocity_joint_interface_.registerHandle(vel_handle);
+
+        hardware_interface::JointHandle effort_handle(joint_state_interface_.getHandle(joint_names_[i]), &jointcommands.effort[i]);
+        effort_joint_interface_.registerHandle(effort_handle);
+
         jointcommands.position[i] = joint_state_.position[i];
 
       }
 
       registerInterface(&joint_state_interface_);
       registerInterface(&position_joint_interface_);
+      registerInterface(&velocity_joint_interface_);
+      registerInterface(&effort_joint_interface_);
 
       hardware_interface::ForceTorqueSensorHandle left_hand_force_torque_handle("left_hand_ft_sensor", "l_hand", left_hand_force_, left_hand_torque_);
       force_torque_sensor_interface_.registerHandle(left_hand_force_torque_handle);
@@ -82,33 +91,54 @@ namespace Atlas_Sim_Ros_Control
       force_torque_sensor_interface_.registerHandle(right_hand_force_torque_handle);
 
       registerInterface(&force_torque_sensor_interface_);
-    }else{
 
-      atlas_state_ = *_as;
+      imu_sensor_data_.name = "imu";
+      imu_sensor_data_.frame_id = "/imu_link";
+      imu_sensor_data_.linear_acceleration = new double[3];
+      imu_sensor_data_.angular_velocity = new double[3];
+      imu_sensor_data_.orientation = new double[4];
 
-      for(size_t i = 0; i < atlas_state_.position.size(); ++i){
-        joint_state_.position[i] = (atlas_state_.position[i]);
-        joint_state_.velocity[i] = (atlas_state_.velocity[i]);
-        joint_state_.effort[i] = (atlas_state_.effort[i]);
-      }
+      hardware_interface::ImuSensorHandle imu_sensor_handle(imu_sensor_data_);
+      imu_sensor_interface_.registerHandle(imu_sensor_handle);
 
-      //for (size_t i = 0; i < 3; ++i){
-      left_hand_force_[0] = atlas_state_.l_hand.force.x;
-      left_hand_force_[1] = atlas_state_.l_hand.force.y;
-      left_hand_force_[2] = atlas_state_.l_hand.force.z;
-      left_hand_torque_[0] = atlas_state_.l_hand.torque.x;
-      left_hand_torque_[1] = atlas_state_.l_hand.torque.y;
-      left_hand_torque_[2] = atlas_state_.l_hand.torque.z;
-
-      right_hand_force_[0] = atlas_state_.r_hand.force.x;
-      right_hand_force_[1] = atlas_state_.r_hand.force.y;
-      right_hand_force_[2] = atlas_state_.r_hand.force.z;
-      right_hand_torque_[0] = atlas_state_.r_hand.torque.x;
-      right_hand_torque_[1] = atlas_state_.r_hand.torque.y;
-      right_hand_torque_[2] = atlas_state_.r_hand.torque.z;
-
+      registerInterface(&imu_sensor_interface_);
     }
 
+    atlas_state_ = *_as;
+
+    for(size_t i = 0; i < atlas_state_.position.size(); ++i){
+      joint_state_.position[i] = (atlas_state_.position[i]);
+      joint_state_.velocity[i] = (atlas_state_.velocity[i]);
+      joint_state_.effort[i] = (atlas_state_.effort[i]);
+    }
+
+    //for (size_t i = 0; i < 3; ++i){
+    left_hand_force_[0] = atlas_state_.l_hand.force.x;
+    left_hand_force_[1] = atlas_state_.l_hand.force.y;
+    left_hand_force_[2] = atlas_state_.l_hand.force.z;
+    left_hand_torque_[0] = atlas_state_.l_hand.torque.x;
+    left_hand_torque_[1] = atlas_state_.l_hand.torque.y;
+    left_hand_torque_[2] = atlas_state_.l_hand.torque.z;
+
+    right_hand_force_[0] = atlas_state_.r_hand.force.x;
+    right_hand_force_[1] = atlas_state_.r_hand.force.y;
+    right_hand_force_[2] = atlas_state_.r_hand.force.z;
+    right_hand_torque_[0] = atlas_state_.r_hand.torque.x;
+    right_hand_torque_[1] = atlas_state_.r_hand.torque.y;
+    right_hand_torque_[2] = atlas_state_.r_hand.torque.z;
+
+    imu_sensor_data_.linear_acceleration[0] = atlas_state_.linear_acceleration.x;
+    imu_sensor_data_.linear_acceleration[1] = atlas_state_.linear_acceleration.y;
+    imu_sensor_data_.linear_acceleration[2] = atlas_state_.linear_acceleration.z;
+
+    imu_sensor_data_.angular_velocity[0] = atlas_state_.angular_velocity.x;
+    imu_sensor_data_.angular_velocity[1] = atlas_state_.angular_velocity.y;
+    imu_sensor_data_.angular_velocity[2] = atlas_state_.angular_velocity.z;
+
+    imu_sensor_data_.orientation[0] = atlas_state_.orientation.w;
+    imu_sensor_data_.orientation[1] = atlas_state_.orientation.x;
+    imu_sensor_data_.orientation[2] = atlas_state_.orientation.y;
+    imu_sensor_data_.orientation[3] = atlas_state_.orientation.z;
   }
 
 
@@ -173,9 +203,11 @@ Atlas_Sim_Ros_Control::Atlas_Sim_Ros_Control()
     std::vector<std::string> pieces;
     boost::split(pieces, jointcommands.name[i], boost::is_any_of(":"));
 
-    std::string param_string = "/atlas_controller/gains/" + pieces[2] + "/p";
-    //std::cout << param_string << "\n";
+    // Use opportunity to fill a vector of joint_names
     joint_names_.push_back(pieces[2]);
+
+
+    std::string param_string = "/atlas_controller/gains/" + pieces[2] + "/p";
 
     rosnode->getParam(param_string,
       jointcommands.kp_position[i]);
