@@ -42,6 +42,8 @@
 #include <ros/ros.h>
 #include <hardware_interface/joint_command_interface.h>
 #include <hardware_interface/joint_state_interface.h>
+#include <hardware_interface/force_torque_sensor_interface.h>
+
 #include <joint_limits_interface/joint_limits_interface.h>
 #include <hardware_interface/robot_hw.h>
 
@@ -90,6 +92,7 @@ private:
 
     hardware_interface::JointStateInterface joint_state_interface_;
     hardware_interface::PositionJointInterface position_joint_interface_;
+    hardware_interface::ForceTorqueSensorInterface force_torque_sensor_interface_;
 
 
     double _fake_dof_value;
@@ -103,6 +106,13 @@ private:
     atlas_msgs::AtlasState atlas_state_;
     sensor_msgs::JointState joint_state_;
     std::vector<std::string> joint_names_;
+
+    double left_hand_force_[3];
+    double left_hand_torque_[3];
+
+    double right_hand_force_[3];
+    double right_hand_torque_[3];
+
 
 };
 

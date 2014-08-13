@@ -42,6 +42,7 @@
 #include <std_msgs/String.h>
 #include <atlas_msgs/AtlasState.h>
 
+
 namespace Atlas_Sim_Ros_Control
 {
 
@@ -73,6 +74,14 @@ namespace Atlas_Sim_Ros_Control
 
       registerInterface(&joint_state_interface_);
       registerInterface(&position_joint_interface_);
+
+      hardware_interface::ForceTorqueSensorHandle left_hand_force_torque_handle("left_hand_ft_sensor", "l_hand", left_hand_force_, left_hand_torque_);
+      force_torque_sensor_interface_.registerHandle(left_hand_force_torque_handle);
+
+      hardware_interface::ForceTorqueSensorHandle right_hand_force_torque_handle("right_hand_ft_sensor", "r_hand", right_hand_force_, right_hand_torque_);
+      force_torque_sensor_interface_.registerHandle(right_hand_force_torque_handle);
+
+      registerInterface(&force_torque_sensor_interface_);
     }else{
 
       atlas_state_ = *_as;
@@ -82,6 +91,21 @@ namespace Atlas_Sim_Ros_Control
         joint_state_.velocity[i] = (atlas_state_.velocity[i]);
         joint_state_.effort[i] = (atlas_state_.effort[i]);
       }
+
+      //for (size_t i = 0; i < 3; ++i){
+      left_hand_force_[0] = atlas_state_.l_hand.force.x;
+      left_hand_force_[1] = atlas_state_.l_hand.force.y;
+      left_hand_force_[2] = atlas_state_.l_hand.force.z;
+      left_hand_torque_[0] = atlas_state_.l_hand.torque.x;
+      left_hand_torque_[1] = atlas_state_.l_hand.torque.y;
+      left_hand_torque_[2] = atlas_state_.l_hand.torque.z;
+
+      right_hand_force_[0] = atlas_state_.r_hand.force.x;
+      right_hand_force_[1] = atlas_state_.r_hand.force.y;
+      right_hand_force_[2] = atlas_state_.r_hand.force.z;
+      right_hand_torque_[0] = atlas_state_.r_hand.torque.x;
+      right_hand_torque_[1] = atlas_state_.r_hand.torque.y;
+      right_hand_torque_[2] = atlas_state_.r_hand.torque.z;
 
     }
 
