@@ -335,7 +335,7 @@ geometry_msgs::PoseStamped MeshMaker::get_wrist_orientation(pcl::PointCloud<pcl:
 	}
 
 	Eigen::Quaterniond pose_quat = get_axes_transformation(reference_axes, goal_axes);
-	Eigen::Vector3d offset = -(goal_axes.y_axis / goal_axes.y_axis.norm()) * 0.08; //Offset by 8 centimeters out of palm.
+	Eigen::Vector3d offset = -(goal_axes.y_axis / goal_axes.y_axis.norm()) * (0.12); //Offset by 8 centimeters out of palm.
 
 	view->publish("end_effector_with_offset", view->mk_pt_msg(bounds->get_centroid() + offset));
 	return view->mk_pose_msg(pose_quat, bounds->get_centroid() + offset);

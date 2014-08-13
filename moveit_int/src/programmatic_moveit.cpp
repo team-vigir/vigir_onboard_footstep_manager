@@ -40,6 +40,7 @@ private:
 	void add_table();
 	moveit_msgs::AttachedCollisionObject mk_table();
 	void display_arm_trajectory();
+	void move_to_pregrasp_position();
 	void plan_to_new_goal();
 	void get_end_state(osu_ros_adept::robot_movement_command& movement_msg);
 
@@ -48,6 +49,7 @@ private:
 	moveit::planning_interface::MoveGroup::Plan adept_plan;
 	AdeptJoint* robot_joints;
 	osu_ros_adept::robot_movement_command movement_msg;
+	geometry_msgs::PoseStamped current_goal;
 	bool has_new_goal;
 
 	ros::Publisher display_publisher;
@@ -175,6 +177,7 @@ void AdeptInterface::set_hand_goal(const geometry_msgs::PoseStamped::ConstPtr& g
 	cout << "programmatic_moveit read position: x- " << goal->pose.position.x 
 		<< " y- " << goal->pose.position.y << " z- " << goal->pose.position.z << endl;
 	
+	current_goal = *goal;
 	group.setPoseTarget(goal->pose);
 	
 	has_new_goal = true;
@@ -186,9 +189,34 @@ void AdeptInterface::move_hand()
 		return;
 	
 	} else {
+		move_to_pregrasp_position();
 		plan_to_new_goal();
 		has_new_goal = false;
 	}
+}
+
+void AdeptInterface::move_to_pregrasp_position()
+{
+	Eigen::Quaterniond wrist_transform(current_goal.pose.orientation.w,
+										current_goal.pose.orientation.x,
+										current_goal.pose.orientation.y,
+										current_goal.pose.orientation.z);
+	Eigen::Vector3d palm_normal(0, 1, 0);
+	palm_normal = wrist_transform._transformVector(palm_normal);
+	palm_normal.normalize();
+
+	Eigen::Vector3d offset = palm_normal * (-0.10);
+	geometry_msgs::PoseStamped pregrasp_pose = current_goal;
+	pregrasp_pose.pose.position.x += offset[0];
+	pregrasp_pose.pose.position.y += offset[1];
+	pregrasp_pose.pose.position.z += offset[2];
+
+	group.setPoseTarget(pregrasp_pose.pose);
+	plan_to_new_goal();
+	sleep(5);
+	
+	group.setPoseTarget(current_goal.pose);
+
 }
 
 void AdeptInterface::plan_to_new_goal()
