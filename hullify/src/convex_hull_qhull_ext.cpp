@@ -132,6 +132,7 @@ MeshMaker::MeshMaker()
 	view->add_mesh_topic(mesh_base_name);
 	view->add_topic_no_queue("principal_axis", marker_type);
 	view->add_topic_no_queue("end_effector_with_offset", marker_type);
+	view->add_topic_no_queue("original_third_component_axis", marker_type);
 	view->add_topic_no_queue("adept_wrist_orientation", pose_type);
 }
 
@@ -314,8 +315,21 @@ geometry_msgs::PoseStamped MeshMaker::get_wrist_orientation(pcl::PointCloud<pcl:
 	goal_axes.y_axis = principal_axes.col(2);
 	goal_axes.z_axis = principal_axes.col(0);
 
-	Eigen::Vector3d camera_normal = bounds->get_camera_normal_vec();
-	if (acos(camera_normal.dot(goal_axes.y_axis) / (camera_normal.norm() * goal_axes.y_axis.norm())) < M_PI/2){
+	if (!vecs_are_equal(goal_axes.y_axis.cross(goal_axes.z_axis), goal_axes.x_axis)){
+		cout << "We gave ourselves invalid PCA axes!!!!!" << endl;
+		goal_axes.x_axis = - goal_axes.x_axis;
+	}
+
+	Eigen::Vector3d camera_to_centroid = bounds->get_camera_normal_vec();
+	double cos_angle = camera_to_centroid.dot(goal_axes.y_axis) / (camera_to_centroid.norm() * goal_axes.y_axis.norm());
+	double palm_normal_camera_normal_angle = acos(cos_angle);
+	cout << "palm_normal_camera_normal_angle" << palm_normal_camera_normal_angle << endl;
+	view->publish("original_third_component_axis", view->mk_vector_msg(goal_axes.y_axis));
+	
+	if (palm_normal_camera_normal_angle > M_PI/2){
+		goal_axes.x_axis = -goal_axes.x_axis;
+		goal_axes.y_axis = -goal_axes.y_axis;
+	} else if (isnan(palm_normal_camera_normal_angle) && cos_angle < 0) {
 		goal_axes.x_axis = -goal_axes.x_axis;
 		goal_axes.y_axis = -goal_axes.y_axis;
 	}

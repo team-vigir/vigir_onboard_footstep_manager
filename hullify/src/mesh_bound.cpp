@@ -44,12 +44,12 @@ void MeshBound::constructor_common()
 	geometry_msgs::PolygonStamped poly_type;
 	sensor_msgs::PointCloud2 cloud_type;
 	view->add_topic_no_queue("centroid", marker_type);
-	view->add_topic_no_queue("normal", marker_type);
+	view->add_topic_no_queue("camera_normal", marker_type);
+	view->add_topic_no_queue("camera_pos", marker_type);
 	view->add_topic_no_queue("horiz_normal", marker_type);
 	view->add_topic_no_queue("plane1", poly_type);
 	view->add_topic_no_queue("plane2", poly_type);
 	view->add_topic_no_queue("horiz_projected", cloud_type);
-	view->add_topic_no_queue("camera_pos", marker_type);
 }
 
 //Description: Changes the input cloud, invalidates the centroid
@@ -438,6 +438,7 @@ void MeshBound::get_camera_normal()
 	//Make it a unit vector
 	camera_normal = camera_normal / camera_normal.norm();
 
+	view->publish("camera_normal", view->mk_vector_msg(camera_normal));
 	cout << "Normal vector from camera to centroid: " << endl << camera_normal << endl;
 }
 
@@ -467,7 +468,7 @@ Eigen::Vector3d MeshBound::get_camera_position()
 	//pos.m_floats[0] = .5; pos.m_floats[1] = -1; pos.m_floats[2] = 0;
 	//pos.m_floats[0] = 0; pos.m_floats[1] = -1; pos.m_floats[2] = 0;
 	//pos.m_floats[0] = 0; pos.m_floats[1] = -1; pos.m_floats[2] = 0.5;
-	pos.m_floats[0] = 2; pos.m_floats[1] = 0; pos.m_floats[2] = 0;
+	//pos.m_floats[0] = 2; pos.m_floats[1] = 0; pos.m_floats[2] = 0;
 	visualization_msgs::Marker camera_pos_msg = view->mk_pt_msg(init_vec(pos));
 	view->publish("camera_pos", camera_pos_msg);
 
