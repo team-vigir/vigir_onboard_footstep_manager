@@ -242,10 +242,10 @@ try{
 
         controller_manager::ControllerManager cm(&atlas_sim_ros_control_interface);
 
-        ros::AsyncSpinner spinner(4);
+        ros::AsyncSpinner spinner(2);
         spinner.start();
 
-        ros::Rate loop_rate(50);
+        ros::Rate loop_rate(1000);
 
         ros::Time last_time = ros::Time::now();
 
@@ -253,7 +253,7 @@ try{
                 {
                     //ROS_INFO("in main loop");
                     loop_rate.sleep();
-                    ros::spinOnce();
+                    //ros::spinOnce();
 
                     ros::Time current_time = ros::Time::now();
                     ros::Duration elapsed_time = current_time - last_time;
