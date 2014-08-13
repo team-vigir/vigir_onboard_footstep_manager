@@ -9,5 +9,9 @@
     
     <rosparam file="$(find vigir_atlas_sim_ros_control)/config/force_torque_sensor_controller.yaml" command="load"/>
     <node name="force_torque_sensor_controller_spawner" pkg="controller_manager" type="spawner" ns="atlas_control" respawn="false" output="screen" args="force_torque_sensor_controller" />
+    
+    <rosparam file="$(find vigir_atlas_sim_ros_control)/config/imu_sensor_controller.yaml" command="load"/>
+    <node name="imu_sensor_controller_spawner" pkg="controller_manager" type="spawner" ns="atlas_control" respawn="false" output="screen" args="imu_sensor_controller" />
+
 
 </launch> 
