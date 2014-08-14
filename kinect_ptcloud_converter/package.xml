@@ -48,12 +48,8 @@
   <build_depend>tf</build_depend>
   <build_depend>visualization_msgs</build_depend>
   <build_depend>geometry_msgs</build_depend>
-<<<<<<< HEAD
   <build_depend>flor_perception_msgs</build_depend>
-  <run_depend>openni_launch</run_depend>
-=======
   <!--<run_depend>openni_launch</run_depend>-->
->>>>>>> 18445cc08bdfe25cd73e3fc1e933e2dd14be4dec
   <run_depend>roscpp</run_depend>
   <run_depend>rospy</run_depend>
   <run_depend>sensor_msgs</run_depend>
