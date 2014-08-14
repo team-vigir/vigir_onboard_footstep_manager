@@ -5,7 +5,7 @@ project(kinect_ptcloud_converter)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  openni_launch
+  #openni_launch
   roscpp
   rospy
   sensor_msgs
