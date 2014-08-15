@@ -1,0 +1,1 @@
+This is a test to ensure osu_stable is off the beaten path. This will also determine if flor_update uses the checkdout branch or if it uses the master branch always.
