@@ -36,6 +36,7 @@ public:
 	void print_current_physical_joint_state();
 
 private:
+	void configure_movegroup();
 	void init_mk_movement_msg_template();
 	void add_table();
 	moveit_msgs::AttachedCollisionObject mk_table();
@@ -92,6 +93,8 @@ void recv_hand_pose_request(const geometry_msgs::PoseStamped::ConstPtr& msg)
 AdeptInterface::AdeptInterface()
 :group("adept_arm")
 {
+	configure_movegroup();
+
 	display_publisher = node_handle.advertise<moveit_msgs::DisplayTrajectory>("/move_group/jc_planned_path", 1, true);
 	action_request = node_handle.serviceClient<osu_ros_adept::robot_movement_command>("send_robot_movements");
 	add_table();
@@ -103,8 +106,20 @@ AdeptInterface::AdeptInterface()
 	has_new_goal = false;
 
 	init_mk_movement_msg_template();
+}
 
-	group.setWorkspace(-1, -1, 0.4, 2, 2, 2);
+void AdeptInterface::configure_movegroup()
+{
+	//group.setWorkspace(-1, -1, 0.4, 2, 2, 2); //Doesn't work
+	double max_planning_time = 7;
+	double orientation_rpy_radian_tolerance = 0.26;
+
+	group.setPlanningTime(max_planning_time);
+	group.setGoalOrientationTolerance(orientation_rpy_radian_tolerance);
+
+	cout << "Limited planning time to " << max_planning_time << " seconds"
+		<< " and added " << orientation_rpy_radian_tolerance * 57.295 << endl
+		<< " degrees of rpy wiggle room to end effector pose." << endl << endl;
 }
 
 AdeptInterface::~AdeptInterface()
@@ -124,11 +139,8 @@ void AdeptInterface::init_mk_movement_msg_template()
 void AdeptInterface::add_table()
 {
 	planning_scene_diff_publisher = node_handle.advertise<moveit_msgs::PlanningScene>("planning_scene", 1);
-	while(planning_scene_diff_publisher.getNumSubscribers() < 1)
-	{
-	  ros::WallDuration sleep_t(0.5);
-	  sleep_t.sleep();    
-	}
+	cout << "Waiting for move_group to initialize properly before adding table..." << endl;
+	ros::service::waitForService("/get_planning_scene", ros::Duration(10));
 
 	moveit_msgs::AttachedCollisionObject table = mk_table();
 	
@@ -198,9 +210,9 @@ void AdeptInterface::move_hand()
 void AdeptInterface::move_to_pregrasp_position()
 {
 	Eigen::Quaterniond wrist_transform(current_goal.pose.orientation.w,
-										current_goal.pose.orientation.x,
-										current_goal.pose.orientation.y,
-										current_goal.pose.orientation.z);
+					current_goal.pose.orientation.x,
+					current_goal.pose.orientation.y,
+					current_goal.pose.orientation.z);
 	Eigen::Vector3d palm_normal(0, 1, 0);
 	palm_normal = wrist_transform._transformVector(palm_normal);
 	palm_normal.normalize();
@@ -213,7 +225,6 @@ void AdeptInterface::move_to_pregrasp_position()
 
 	group.setPoseTarget(pregrasp_pose.pose);
 	plan_to_new_goal();
-	sleep(5);
 
 	group.setPoseTarget(current_goal.pose);
 }
@@ -257,6 +268,10 @@ void AdeptInterface::get_end_state(osu_ros_adept::robot_movement_command& moveme
 {
 	long final_pos_idx = adept_plan.trajectory_.joint_trajectory.points.size() - 1;
 	int num_joints = adept_plan.trajectory_.joint_trajectory.points[1].positions.size();
+
+	if (final_pos_idx > 0){
+		cout << "The motion plan generated has " << final_pos_idx << " waypoints!!!!! More than one!!! Could incorporate prgrasp position!" << endl;
+	}
 
 	trajectory_msgs::JointTrajectory* traj = &(adept_plan.trajectory_.joint_trajectory);
 	cout << "Num joints: " << num_joints << endl;
