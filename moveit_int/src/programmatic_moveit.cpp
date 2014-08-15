@@ -214,9 +214,8 @@ void AdeptInterface::move_to_pregrasp_position()
 	group.setPoseTarget(pregrasp_pose.pose);
 	plan_to_new_goal();
 	sleep(5);
-	
-	group.setPoseTarget(current_goal.pose);
 
+	group.setPoseTarget(current_goal.pose);
 }
 
 void AdeptInterface::plan_to_new_goal()
