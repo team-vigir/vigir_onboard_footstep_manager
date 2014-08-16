@@ -6,12 +6,11 @@
 
 	<include file = "$(find openni_launch)/launch/openni.launch" />
 
-	<node pkg = "kinect_ptcloud_converter" name = "kinect_ptcloud_converter_node" type = "kinect_ptcloud_converter_node" launch-prefix = "xterm -e" />
-
 	<include file = "$(find adept_moveit_connector)/launch/demo.launch" />
 
 	<node pkg = "moveit_int" name = "programmatic_moveit" type = "programmatic_moveit" launch-prefix = "xterm -e" />
 
 	<!--<include file = "$(find flor_grasp_controllers)/launch/osu_robotiq_handle.launch" />
 	<node pkg = "robotiq_s_model_control" name = "SModelSimpleController" type = "SModelSimpleController.py" />-->
+	
 </launch>

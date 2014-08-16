@@ -26,7 +26,8 @@ SelectedPointsTopic::~SelectedPointsTopic()
 
 void SelectedPointsTopic::updateTopic()
 {
-  nh_.param("frame_id", tf_frame_, std::string("/base_link"));
+  nh_.param("frame_id", tf_frame_, std::string("/camera_depth_optical_frame"));
+  tf_frame_ = "/camera_depth_optical_frame";
   cloud_topic_ = "/selected_points";
   pub_ = nh_.advertise<sensor_msgs::PointCloud2>( cloud_topic_.c_str(), 1 );
   ROS_INFO( "Publishing data on topic %s with frame_id %s.",

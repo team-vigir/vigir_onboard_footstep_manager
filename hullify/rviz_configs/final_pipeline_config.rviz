@@ -4,7 +4,9 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /Marker3
+        - /MotionPlanning1/Scene Geometry1
+        - /TF1
+        - /TF1/Frames1
       Splitter Ratio: 0.74256
     Tree Height: 268
   - Class: rviz/Help
@@ -366,7 +368,7 @@ Visualization Manager:
       Axes Radius: 0.1
       Class: rviz/Pose
       Color: 255; 25; 0
-      Enabled: true
+      Enabled: false
       Head Length: 0.3
       Head Radius: 0.1
       Name: Pose
@@ -374,15 +376,15 @@ Visualization Manager:
       Shaft Radius: 0.05
       Shape: Axes
       Topic: /convex_hull/adept_wrist_orientation
-      Value: true
+      Value: false
     - Class: rviz/Marker
-      Enabled: true
+      Enabled: false
       Marker Topic: /convex_hull/camera_normal
       Name: Marker
       Namespaces:
-        plane_ns: true
+        {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/Marker
       Enabled: false
       Marker Topic: /convex_hull/original_third_component_axis
@@ -420,6 +422,49 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 4096
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: PointCloud2
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.01
+      Style: Flat Squares
+      Topic: /selected_points/transformed
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
+    - Class: rviz/TF
+      Enabled: false
+      Frame Timeout: 15
+      Frames:
+        All Enabled: false
+      Marker Scale: 1
+      Name: TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: true
+      Tree:
+        {}
+      Update Interval: 0
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -431,26 +476,27 @@ Visualization Manager:
       Hide Inactive Objects: true
     - Class: rviz/MoveCamera
     - Class: rviz/Select
+    - Class: rviz_plugin_selected_points_topic/SelectedPointsTopic
   Value: true
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 3.8987
+      Distance: 1.08579
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.113567
-        Y: 0.10592
+        X: 0.457598
+        Y: -0.268415
         Z: 2.23518e-07
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: -0.0402028
+      Pitch: 0.289797
       Target Frame: base_link
       Value: XYOrbit (rviz)
-      Yaw: 4.65498
+      Yaw: 4.98998
     Saved: ~
 Window Geometry:
   Displays:
@@ -466,5 +512,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1375
-  X: 65
+  X: 58
   Y: 24
