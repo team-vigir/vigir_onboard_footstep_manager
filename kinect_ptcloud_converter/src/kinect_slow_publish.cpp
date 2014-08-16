@@ -32,6 +32,8 @@ int main(int argc, char** argv){
 	string common_prefix_in = "/camera/depth/";
 	string common_prefix_out = "/kinect/depth/";
 
+	cout << "Kinect data slow publisher online!" << endl << endl;
+
 	ros::Subscriber get_current_cloud = n.subscribe<sensor_msgs::PointCloud2>("/camera/depth_registered/points", 5, set_latest_pointcloud);
 	ros::Publisher ptcloud_output_topic = n.advertise<sensor_msgs::PointCloud2>("/camera/depth_registered/2hz_playback_pts", 5);
 	

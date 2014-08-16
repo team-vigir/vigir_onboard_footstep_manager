@@ -1,9 +1,5 @@
 <launch>
 	<include file = "$(find hullify)/launch/osu_adept_common.launch" />
 
-	<node type = "static_transform_publisher" name = "camera_static_transform_publisher" pkg = "tf" args = "-0.09 -0.22 0.12 0 0 0 1 /adept_combined /camera_link 10" />
-
 	<node type = "selected_points_transformer" name = "selected_points_transformer" pkg = "kinect_ptcloud_converter" launch-prefix = "xterm -e" />
-
-	<node type = "kinect_slow_publish" name = "kinect_slow_publish" pkg = "kinect_ptcloud_converter" launch-prefix = "xterm -e" />
 </launch>

@@ -125,6 +125,10 @@ add_executable(selected_points_transformer src/selected_points_transformer.cpp)
 target_link_libraries(selected_points_transformer ${catkin_LIBRARIES})
 set_target_properties(selected_points_transformer PROPERTIES COMPILE_FLAGS "-Wall -g")
 
+add_executable(kinect_transform_publisher src/kinect_transform_publisher.cpp)
+target_link_libraries(kinect_transform_publisher ${catkin_LIBRARIES})
+set_target_properties(kinect_transform_publisher PROPERTIES COMPILE_FLAGS "-Wall -g")
+
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(kinect_ptcloud_converter_node kinect_ptcloud_converter_generate_messages_cpp)

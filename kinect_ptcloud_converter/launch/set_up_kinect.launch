@@ -1,0 +1,11 @@
+<launch>
+	<include file = "$(find openni_launch)/launch/openni.launch" />
+
+	<!-- The old static publisher-->
+	<!--<node type = "static_transform_publisher" name = "camera_static_transform_publisher" pkg = "tf" args = "-0.09 -0.22 0.12 0 0 0 1 /adept_combined /camera_link 10" />-->
+	
+	<node type = "kinect_transform_publisher" name = "kinect_transform_publisher" pkg = "kinect_ptcloud_converter" launch-prefix = "xterm -e" output = "screen" />
+
+	<!-- Handles the down-publishing of depth, pointcloud, and cameraInfo data to reduce octomap refresh rate -->
+	<node type = "kinect_slow_publish" name = "kinect_slow_publish" pkg = "kinect_ptcloud_converter" launch-prefix = "xterm -e" />
+</launch>
