@@ -42,6 +42,24 @@ pcl::PointXYZ init_pt(double x, double y, double z)
 	return pt;
 }
 
+double get_angle_mag_between(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2)
+{
+	double cos_angle = v1.dot(v2) / (v2.norm() * v1.norm());
+	double theta = acos(cos_angle);
+	if (isnan(theta)){
+		cout << "acos() returned nan angle in get_angle_mag_between()." << endl;
+		if (cos_angle > 0){
+			theta = 0;
+
+		} else {
+			theta = M_PI;
+
+		}
+	}
+
+	return theta;
+}
+
 double pt_dist(pcl::PointXYZ pt1, pcl::PointXYZ pt2)
 {
 	double dx = pt1.x - pt2.x;

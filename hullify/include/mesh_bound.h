@@ -53,9 +53,9 @@ class MeshBound {
 		MeshBound(string ff, Hullify_View* in_view);
 		MeshBound(pcl::PointCloud<pcl::PointXYZ>::Ptr in_cloud, string ff, Hullify_View* in_view);
 
+		void set_input_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr in_cloud);
 		void display_polygon(geometry_msgs::PolygonStamped polygon);
 		void construct_planes();
-		void set_input_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr in_cloud);
 
 		pcl::ModelCoefficients get_plane1();
 		pcl::ModelCoefficients get_plane2();
@@ -79,10 +79,7 @@ class MeshBound {
 		bool pt_too_near_centroid(Pt_pos* pt_angles, long& pt_idx, Eigen::Vector3d& pt_to_centroid, long& num_pts);
 		void print_pt_angles(Pt_pos* pt_angles, long num_pts);
 		Eigen::Vector3d* get_ref_line_slope(pcl::PointCloud<pcl::PointXYZ>::Ptr proj_pts);
-		bool pt_wraps_past_ref_line(const Eigen::Vector3d& slope, const Eigen::Vector3d& line_norm, pcl::PointXYZ& pt);
-		bool is_valid_parametric_denom(int coord1, int coord2, Eigen::Vector3d slope, Eigen::Vector3d line_norm);
-		void verify_pt_proj_using_third(int coord, Eigen::Vector3d pt1, Eigen::Vector3d pt2);
-		bool determine_pt_hemisphere(double s);
+		bool pt_wraps_past_ref_line(const Eigen::Vector3d& line_norm, pcl::PointXYZ& pt);
 		void calculate_parametric_coefficients_for_proj(int coord1, int coord2, Eigen::Vector3d slope, Eigen::Vector3d line_norm, Eigen::Vector3d pt, double& s, double& t);
 		int* find_max_consecutive_angular_diff(Pt_pos* pt_angles, long num_pts);
 

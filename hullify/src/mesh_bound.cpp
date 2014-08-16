@@ -240,31 +240,29 @@ Pt_pos* MeshBound::find_all_pt_angles(Eigen::Vector3d& ref_line_slope, Eigen::Ve
 	num_pts = proj_pts->points.size();
 	Pt_pos* pt_angles = new Pt_pos[num_pts];
 	Eigen::Vector3d cur_vec;
+	int num_skipped_pts = 0;
 	for (long i = 0; i < num_pts; ++i){
 		cur_vec = init_vec(proj_pts->points[i]) - *centroid;
 		
 		if (pt_too_near_centroid(pt_angles, i, cur_vec, num_pts)){
+			num_skipped_pts++;
 			continue;
 		}
 
 		pt_angles[i].idx = i;
-		pt_angles[i].angle = acos(ref_line_slope.dot(cur_vec) / cur_vec.norm());
-		if (isnan(pt_angles[i].angle)){
-			cout << "acos returned nan angle in MeshBound::find_all_pt_angles(). Setting to 0." << endl;
-			if (ref_line_slope.dot(cur_vec) / cur_vec.norm() > 0)
-				pt_angles[i].angle = 0;
-			else 
-				pt_angles[i].angle = M_PI;
-		}
+		pt_angles[i].angle = get_angle_mag_between(ref_line_slope, cur_vec);
 
 		//Reflect point if it is past PI rad
-		if (pt_wraps_past_ref_line(ref_line_slope, ref_line_orth, proj_pts->points[i])){
+		//if (pt_wraps_past_ref_line(ref_line_slope, ref_line_orth, proj_pts->points[i])){
+		if (pt_wraps_past_ref_line(ref_line_orth, proj_pts->points[i])){
 			pt_angles[i].angle = 2 * M_PI - pt_angles[i].angle;
 		}
 
 		cout << "\tCloud_idx " << pt_angles[i].idx << "(" << proj_pts->points[i].x << " , " << proj_pts->points[i].y << " , " << proj_pts->points[i].z << ") has angle " 
 			<< pt_angles[i].angle << endl;
 	}
+	cout << "In MeshBound::find_all_pt_angles(), the number of skipped points was: " << num_skipped_pts
+		<< "\nWith " << num_pts << " total." << endl;
 
 	return pt_angles;
 }
@@ -273,7 +271,7 @@ Pt_pos* MeshBound::find_all_pt_angles(Eigen::Vector3d& ref_line_slope, Eigen::Ve
 //	point if it is too close to the centroid
 bool MeshBound::pt_too_near_centroid(Pt_pos* pt_angles, long& pt_idx, Eigen::Vector3d& pt_to_centroid, long& num_pts)
 {
-	if (pt_to_centroid.norm() < .01){
+	if (pt_to_centroid.norm() < .005){
 		cout << "Skipping angle, too close to centroid. idx = " << pt_idx << endl;
 		num_pts--;
 		pt_idx--;
@@ -288,83 +286,18 @@ bool MeshBound::pt_too_near_centroid(Pt_pos* pt_angles, long& pt_idx, Eigen::Vec
 //	reference normal (on the other side of a
 //	cross-sectional line)
 //Line: Centroid + t(camera_normal)
-bool MeshBound::pt_wraps_past_ref_line(const Eigen::Vector3d& slope, const Eigen::Vector3d& line_norm, pcl::PointXYZ& pt)
+bool MeshBound::pt_wraps_past_ref_line(const Eigen::Vector3d& line_norm, pcl::PointXYZ& pt)
 {
-	int X = 0, Y = 1, Z = 2;
-	int verification_coord = 0;
-	double s;	//The coefficient of the line_normal
-	double t;	//The scalar for the coefficient of camera_norm (slope)
-	Eigen::Vector3d pt_in_question = init_vec(pt);
+	Eigen::Vector3d centroid_to_point_vec = init_vec(pt) - *centroid;
+	double angle_between_normal_and_pt = get_angle_mag_between(line_norm, centroid_to_point_vec);
 
-	//See Doc folder in hullify package for mathematical explanation
-	if (is_valid_parametric_denom(X, Y, slope, line_norm)){
-		calculate_parametric_coefficients_for_proj(X, Y, slope, line_norm, pt_in_question, s, t);
-		verification_coord = Z;
+	//cout << "Angle in pt_wraps_past_ref_line: " << angle_between_normal_and_pt << endl;
 
-	} else if (is_valid_parametric_denom(Y, X, slope, line_norm)){
-		calculate_parametric_coefficients_for_proj(Y, X, slope, line_norm, pt_in_question, s, t);
-		verification_coord = Z;
-
-	} else if (is_valid_parametric_denom(X, Z, slope, line_norm)){
-		calculate_parametric_coefficients_for_proj(X, Z, slope, line_norm, pt_in_question, s, t);
-		verification_coord = Y;
-
-	} else if (is_valid_parametric_denom(Z, X, slope, line_norm)){
-		calculate_parametric_coefficients_for_proj(Z, X, slope, line_norm, pt_in_question, s, t);
-		verification_coord = Y;
-
-	} else if (is_valid_parametric_denom(Z, Y, slope, line_norm)){
-		calculate_parametric_coefficients_for_proj(Z, Y, slope, line_norm, pt_in_question, s, t);
-		verification_coord = X;
-
-	} else if (is_valid_parametric_denom(Y, Z, slope, line_norm)){
-		calculate_parametric_coefficients_for_proj(Y, Z, slope, line_norm, pt_in_question, s, t);
-		verification_coord = X;
+	if (angle_between_normal_and_pt > (M_PI / 2)){
+		return true;
 	}
 
-	verify_pt_proj_using_third(verification_coord, slope*t + (*centroid), line_norm*s + init_vec(pt));
-
-	cout.precision(9);
-	cout << "\t\ts: " << s << " t: " << t << endl;
-
-	return determine_pt_hemisphere(s);
-}
-
-bool MeshBound::is_valid_parametric_denom(int coord1, int coord2, Eigen::Vector3d slope, Eigen::Vector3d line_norm)
-{
-	return (((slope[coord1] * line_norm[coord2]) - (slope[coord2] * line_norm[coord1])) != 0
-			&& line_norm[coord1] != 0);
-}
-
-void MeshBound::calculate_parametric_coefficients_for_proj(int coord1, int coord2, Eigen::Vector3d slope, Eigen::Vector3d line_norm, Eigen::Vector3d pt, double& s, double& t)
-{
-	t = line_norm[coord2] * (pt[coord1] - (*centroid)[coord1]) - (line_norm[coord1] * (pt[coord2] - (*centroid)[coord2]));
-	t /= ((slope[coord1] * line_norm[coord2]) - (slope[coord2] * line_norm[coord1]));
-
-	s = (slope[coord1] * t) + (*centroid)[coord1] - pt[coord1];
-	s /= line_norm[coord1];
-}
-
-void MeshBound::verify_pt_proj_using_third(int coord, Eigen::Vector3d pt1, Eigen::Vector3d pt2)
-{
-	if (fabs(pt1[coord] - pt2[coord]) > 0.01){
-		ROS_ERROR("pt_wraps_past_ref_line() verification indicates error in projection.");
-	}
-}
-
-//Description: s is the coefficient on the vector needed to 
-//	project the point above onto the reference line. t is the 
-//	coefficient on the on the reference line's slope to reach the
-//	projected point.
-//	s > 0 implies upper hemisphere. s < 0 implies lower hemisphere
-//	if s == 0, the point does not need to be reflected.
-bool MeshBound::determine_pt_hemisphere(double s)
-{
-	if (s >= 0){
-		return false;	
-	}
-
-	return true;	//Default: it is a big angle
+	return false;
 }
 
 void MeshBound::print_pt_angles(Pt_pos* pt_angles, long num_pts)
