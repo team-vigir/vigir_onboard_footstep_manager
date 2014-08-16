@@ -1,0 +1,1 @@
+This is the name of the original package that the pointcloud rviz selector plugin came from. It had additional code that was not necessary to the project, so we removed it. This could be a valuable selection tool and deserves some testing.
