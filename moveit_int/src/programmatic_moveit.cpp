@@ -43,7 +43,9 @@ private:
 	void display_arm_trajectory();
 	void move_to_pregrasp_position();
 	void plan_to_new_goal();
-	void get_end_state(osu_ros_adept::robot_movement_command& movement_msg);
+	void execute_trajectory();
+	void set_movement_msg_with_next_trajectory(trajectory_msgs::JointTrajectoryPoint& current_waypoint);
+	//void get_end_state(osu_ros_adept::robot_movement_command& movement_msg);
 
 	ros::NodeHandle node_handle;
 	moveit::planning_interface::MoveGroup group;
@@ -201,13 +203,13 @@ void AdeptInterface::move_hand()
 		return;
 	
 	} else {
-		move_to_pregrasp_position();
+		//move_to_pregrasp_position();
 		plan_to_new_goal();
 		has_new_goal = false;
 	}
 }
 
-void AdeptInterface::move_to_pregrasp_position()
+/*void AdeptInterface::move_to_pregrasp_position()
 {
 	Eigen::Quaterniond wrist_transform(current_goal.pose.orientation.w,
 					current_goal.pose.orientation.x,
@@ -227,20 +229,17 @@ void AdeptInterface::move_to_pregrasp_position()
 	plan_to_new_goal();
 
 	group.setPoseTarget(current_goal.pose);
-}
+}*/
 
 void AdeptInterface::plan_to_new_goal()
 {
 	if (group.plan(adept_plan)){
 		cout << "Planning registered." << endl;
 		display_arm_trajectory();
-		get_end_state(movement_msg);
-
-		action_request.call(movement_msg);
-		cout << "Bytes sent: " << movement_msg.response.bytes_sent << endl;
+		execute_trajectory();
 
 	} else {
-		ROS_ERROR("No suitable motion plan found.");
+		ROS_ERROR("No suitable motion plan found. We should add angular rotation.");
 
 	}
 }
@@ -264,7 +263,7 @@ void AdeptInterface::display_arm_trajectory()
 	display_publisher.publish(display_trajectory);
 }
 
-void AdeptInterface::get_end_state(osu_ros_adept::robot_movement_command& movement_msg)
+/*void AdeptInterface::get_end_state(osu_ros_adept::robot_movement_command& movement_msg)
 {
 	long final_pos_idx = adept_plan.trajectory_.joint_trajectory.points.size() - 1;
 	int num_joints = adept_plan.trajectory_.joint_trajectory.points[1].positions.size();
@@ -280,5 +279,31 @@ void AdeptInterface::get_end_state(osu_ros_adept::robot_movement_command& moveme
 		robot_joints[i].position = traj->points[final_pos_idx].positions[i];
 		movement_msg.request.jts[i] = traj->points[final_pos_idx].positions[i];
 		cout << "Joint " << robot_joints[i].name << " has position: " << robot_joints[i].position << endl;
+	}
+}*/
+
+void AdeptInterface::execute_trajectory()
+{
+	int num_waypoints = adept_plan.trajectory_.joint_trajectory.points.size();
+	for (int i = 0; i < num_waypoints; i++){
+		set_movement_msg_with_next_trajectory(adept_plan.trajectory_.joint_trajectory.points[i]);
+		action_request.call(movement_msg);
+		//cout << "Bytes sent: " << movement_msg.response.bytes_sent << endl;
+		cout << "Sent out waypoint " << i << " to robot!" << endl;
+	}
+}
+
+void AdeptInterface::set_movement_msg_with_next_trajectory(trajectory_msgs::JointTrajectoryPoint& current_waypoint)
+{
+	long num_joints = current_waypoint.positions.size();
+	if (num_joints != 6){
+		ROS_ERROR("num_joints is not 6 in programmatic_moveit set_movement_msg_with_next_trajectory!! Are we still using Adept?");
+		exit(1);
+	}
+
+	for (int i = 0; i < num_joints; ++i){ 
+		robot_joints[i].position = current_waypoint.positions[i];
+		movement_msg.request.jts[i] = current_waypoint.positions[i];
+		cout << "Joint " << i << " has position: " << robot_joints[i].position << endl;
 	}
 }
