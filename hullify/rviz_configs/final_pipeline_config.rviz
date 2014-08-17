@@ -367,7 +367,7 @@ Visualization Manager:
       Axes Radius: 0.1
       Class: rviz/Pose
       Color: 255; 25; 0
-      Enabled: false
+      Enabled: true
       Head Length: 0.3
       Head Radius: 0.1
       Name: Pose
@@ -375,7 +375,7 @@ Visualization Manager:
       Shaft Radius: 0.05
       Shape: Axes
       Topic: /convex_hull/adept_wrist_orientation
-      Value: false
+      Value: true
     - Class: rviz/Marker
       Enabled: false
       Marker Topic: /convex_hull/camera_normal
@@ -404,7 +404,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: RGB8
       Decay Time: 0
-      Enabled: false
+      Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Max Intensity: 4096
@@ -420,7 +420,7 @@ Visualization Manager:
       Topic: /camera/depth_registered/points
       Use Fixed Frame: true
       Use rainbow: true
-      Value: false
+      Value: true
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -451,107 +451,19 @@ Visualization Manager:
       Use rainbow: true
       Value: true
     - Class: rviz/TF
-      Enabled: true
+      Enabled: false
       Frame Timeout: 15
       Frames:
-        Adept_Atlas_Connector:
-          Value: false
-        Adept_Viper_650_Interface_Plate:
-          Value: false
-        Adept_Viper_s650_Link1:
-          Value: false
-        Adept_Viper_s650_Link2:
-          Value: false
-        Adept_Viper_s650_Link3:
-          Value: false
-        Adept_Viper_s650_Link4:
-          Value: false
-        Adept_Viper_s650_Link5:
-          Value: false
-        Adept_Viper_s650_Link6:
-          Value: false
         All Enabled: false
-        adept_combined:
-          Value: false
-        base_link:
-          Value: false
-        camera_depth_frame:
-          Value: false
-        camera_depth_optical_frame:
-          Value: false
-        camera_link:
-          Value: true
-        camera_rgb_frame:
-          Value: false
-        camera_rgb_optical_frame:
-          Value: false
-        finger_1_link_0:
-          Value: false
-        finger_1_link_1:
-          Value: false
-        finger_1_link_2:
-          Value: false
-        finger_1_link_3:
-          Value: false
-        finger_2_link_0:
-          Value: false
-        finger_2_link_1:
-          Value: false
-        finger_2_link_2:
-          Value: false
-        finger_2_link_3:
-          Value: false
-        finger_middle_link_0:
-          Value: false
-        finger_middle_link_1:
-          Value: false
-        finger_middle_link_2:
-          Value: false
-        finger_middle_link_3:
-          Value: false
-        palm:
-          Value: false
       Marker Scale: 1
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        adept_combined:
-          base_link:
-            Adept_Viper_s650_Link1:
-              Adept_Viper_s650_Link2:
-                Adept_Viper_s650_Link3:
-                  Adept_Viper_s650_Link4:
-                    Adept_Viper_s650_Link5:
-                      Adept_Viper_s650_Link6:
-                        Adept_Viper_650_Interface_Plate:
-                          Adept_Atlas_Connector:
-                            palm:
-                              finger_1_link_0:
-                                finger_1_link_1:
-                                  finger_1_link_2:
-                                    finger_1_link_3:
-                                      {}
-                              finger_2_link_0:
-                                finger_2_link_1:
-                                  finger_2_link_2:
-                                    finger_2_link_3:
-                                      {}
-                              finger_middle_link_0:
-                                finger_middle_link_1:
-                                  finger_middle_link_2:
-                                    finger_middle_link_3:
-                                      {}
-          camera_link:
-            camera_depth_frame:
-              camera_depth_optical_frame:
-                {}
-            camera_rgb_frame:
-              camera_rgb_optical_frame:
-                {}
+        {}
       Update Interval: 0
-      Value: true
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -568,7 +480,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 1.90985
+      Distance: 1.12403
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
@@ -580,10 +492,10 @@ Visualization Manager:
         Z: 2.5332e-07
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.509796
+      Pitch: 1.2748
       Target Frame: base_link
       Value: XYOrbit (rviz)
-      Yaw: 5.03004
+      Yaw: 5.93507
     Saved: ~
 Window Geometry:
   Displays:
@@ -599,5 +511,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1375
-  X: 57
-  Y: -4
+  X: 58
+  Y: 24
