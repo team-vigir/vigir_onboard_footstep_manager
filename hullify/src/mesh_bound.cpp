@@ -93,13 +93,29 @@ void MeshBound::construct_planes()
 	publish_proj_pts(proj_pts);
 
 	//Find largest d_theta
-	int* pt_idxs = get_max_radial_dist(proj_pts);
-	if (pt_idxs == NULL){
-		cout << "Generating NULL Planes for viewing." << endl;
-		plane1 = mk_plane(*centroid, camera_normal);
-		plane2 = mk_plane(*centroid, camera_normal);
+	int* pt_idxs;
+	try {
+		pt_idxs = get_max_radial_dist(proj_pts);
+
+	} catch (tooManyPtsNearCentroid& e){
+		e.print_error();
+		handle_ptcloud_errors();
 		return;
 
+	} catch (insufficientPoints& e){
+		e.print_error();
+		handle_ptcloud_errors();
+		return;
+
+	} catch (noRefVec& e){
+		e.print_error();
+		handle_ptcloud_errors();
+		return;
+
+	} catch(...){
+		cout << "Catching unknown error exception in construct_planes()!" << endl;
+		handle_ptcloud_errors();
+		return;
 	}
 	
 	//Construct planes
@@ -116,6 +132,14 @@ void MeshBound::construct_planes()
 	cout << "v2: " << endl << v2 << endl;
 	cout << "second point: " << endl << init_vec(proj_pts->points[pt_idxs[1]]) << endl;
 	delete [] pt_idxs;
+}
+
+void MeshBound::handle_ptcloud_errors()
+{
+	cout << "Generating NULL Planes for viewing." << endl;
+	plane1 = mk_plane(*centroid, camera_normal);
+	plane2 = mk_plane(*centroid, camera_normal);
+	return;
 }
 
 void MeshBound::find_horiz_normal()
@@ -169,27 +193,25 @@ int* MeshBound::get_max_radial_dist(pcl::PointCloud<pcl::PointXYZ>::Ptr proj_pts
 	Eigen::Vector3d *ref;
 	int* out_array;
 
-	if (proj_pts->points.size() < 3)
-		return NULL;
-
-    if ((ref = get_ref_line_slope(proj_pts)) == NULL){
-		out_array = NULL;
-
-	} else {
-		Eigen::Vector3d line_normal = ref->cross(horiz_normal);
-		cout << "Line normal: " << endl << line_normal << endl;
-		cout << "Ref: " << endl << *ref << endl;
-
-		out_array = get_max_radial_dist_core(proj_pts, *ref, line_normal);
-		delete ref;
+	if (proj_pts->points.size() < 3){
+		throw insufficientPoints(proj_pts->points.size());
 	}
+
+	ref = get_ref_line_slope(proj_pts);
+	Eigen::Vector3d line_normal = ref->cross(horiz_normal);
+	cout << "Line normal: " << endl << line_normal << endl;
+	cout << "Ref: " << endl << *ref << endl;
+
+	out_array = get_max_radial_dist_core(proj_pts, *ref, line_normal);
+	delete ref;
 
 	return out_array;
 
 }
 
-//Returns: Null, or a vector from the centroid
+//Returns: a vector from the centroid
 //	to a suitable point on the plane to define a reference.
+//Or throws an exception
 Eigen::Vector3d* MeshBound::get_ref_line_slope(pcl::PointCloud<pcl::PointXYZ>::Ptr proj_pts)
 {
 	Eigen::Vector3d* ref = new Eigen::Vector3d;
@@ -205,9 +227,7 @@ Eigen::Vector3d* MeshBound::get_ref_line_slope(pcl::PointCloud<pcl::PointXYZ>::P
 	}
 
 	if (!found_slope){
-		ROS_ERROR("The figure in question is not large enough to generate an accurate plane boundary.");
-		ROS_ERROR("Please select another pointcloud.");
-		return NULL; 
+		throw noRefVec();
 	}
 
 	*ref = *ref / ref->norm(); // |u| = 1;
@@ -263,6 +283,10 @@ Pt_pos* MeshBound::find_all_pt_angles(Eigen::Vector3d& ref_line_slope, Eigen::Ve
 	}
 	cout << "In MeshBound::find_all_pt_angles(), the number of skipped points was: " << num_skipped_pts
 		<< "\nWith " << num_pts << " total." << endl;
+
+	if (num_pts < 4){
+		throw tooManyPtsNearCentroid(num_pts);
+	}
 
 	return pt_angles;
 }
@@ -537,4 +561,46 @@ void MeshBound::publish_proj_pts(pcl::PointCloud<pcl::PointXYZ>::Ptr proj_pts)
 	//cout << "One projected point: " << proj_pts->points[0].x << "  " 
 		//<< proj_pts->points[0].y << "  " << proj_pts->points[0].z << endl;
 
+}
+
+
+tooManyPtsNearCentroid::tooManyPtsNearCentroid()
+{
+	leftover_pt_count = 0;
+}
+
+tooManyPtsNearCentroid::tooManyPtsNearCentroid(int leftover_pt_count)
+{
+	this->leftover_pt_count = leftover_pt_count;
+}
+
+void tooManyPtsNearCentroid::print_error()
+{
+	cout << "Too many points in the input cloud are too close to the centroid. " 
+		<< leftover_pt_count << " points are considered valid." << endl
+		<< "Data is considered unreliable; disregarding sample." << endl;
+}
+
+insufficientPoints::insufficientPoints()
+{
+	num_pts = 0;
+}
+
+insufficientPoints::insufficientPoints(int num_pts)
+{
+	this->num_pts = num_pts;
+}
+
+void insufficientPoints::print_error()
+{
+	cout << "Insufficient number of points in the original point cloud." << endl
+		<<"Point count: " << num_pts << ". Data is considered unreliable." << endl;
+}
+
+noRefVec::noRefVec()
+{}
+
+void noRefVec::print_error()
+{
+	cout << "Cannot generate accurate plane boundary with pointcloud given. Discarding plane." << endl;
 }

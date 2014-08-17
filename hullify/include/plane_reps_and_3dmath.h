@@ -43,7 +43,7 @@ double difference(double var1, double var2);
 int dist_compare(const void* a, const void* b);
 
 Eigen::Vector3d init_vec(const pcl::PointXYZ& in);
-bool vecs_are_equal(Eigen::Vector3d v1, Eigen::Vector3d v2);
+bool vecs_are_equal(Eigen::Vector3d v1, Eigen::Vector3d v2, double custom_tolerance=FLOAT_TOLERANCE);
 double get_angle_mag_between(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2);
 
 pcl::PointXYZ init_pt(double x, double y, double z);

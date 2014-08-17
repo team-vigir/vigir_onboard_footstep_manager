@@ -83,7 +83,7 @@ class MeshBound {
 		void calculate_parametric_coefficients_for_proj(int coord1, int coord2, Eigen::Vector3d slope, Eigen::Vector3d line_norm, Eigen::Vector3d pt, double& s, double& t);
 		int* find_max_consecutive_angular_diff(Pt_pos* pt_angles, long num_pts);
 
-		
+		void handle_ptcloud_errors();		
 
 		void publish_proj_pts(pcl::PointCloud<pcl::PointXYZ>::Ptr proj_pts);
 		geometry_msgs::PolygonStamped mk_plane_msg(pcl::ModelCoefficients::Ptr plane);
@@ -101,5 +101,28 @@ class MeshBound {
 		Hullify_View* view;
 };
 
+class tooManyPtsNearCentroid {
+public:
+	tooManyPtsNearCentroid();
+	tooManyPtsNearCentroid(int leftover_pt_count);
+
+	void print_error();
+	int leftover_pt_count;
+};
+
+class insufficientPoints {
+public:
+	insufficientPoints();
+	insufficientPoints(int num_pts);
+
+	void print_error();
+	int num_pts;
+};
+
+class noRefVec {
+public:
+	noRefVec();
+	void print_error();
+};
 
 #endif

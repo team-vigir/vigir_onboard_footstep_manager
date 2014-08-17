@@ -1,5 +1,5 @@
 <launch>
 	<include file = "$(find hullify)/launch/osu_adept_common.launch" />
 
-	<node type = "selected_points_transformer" name = "selected_points_transformer" pkg = "kinect_ptcloud_converter" launch-prefix = "xterm -e" />
+	<node type = "selected_points_transformer" name = "selected_points_transformer" pkg = "kinect_ptcloud_converter" launch-prefix = "xterm -e gdb --args" />
 </launch>

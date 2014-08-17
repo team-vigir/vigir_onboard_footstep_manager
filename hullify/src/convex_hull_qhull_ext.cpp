@@ -48,6 +48,7 @@ class MeshMaker{
 		void listen();
 
 	private:
+		void init_reference_frame();
 		void init_input_topic();
 		void init_mesh_name();
 		pcl::PolygonMesh::Ptr mk_mesh(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
@@ -55,6 +56,7 @@ class MeshMaker{
 	    bool get_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg, pcl::PointCloud<pcl::PointXYZ>::Ptr intermediate_cloud);
 	    bool is_valid_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
 	    geometry_msgs::PoseStamped get_wrist_orientation(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
+	    Axes get_goal_axes(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
 		Eigen::Matrix3d get_principal_axes(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
 		
 		ros::NodeHandle n;
@@ -113,8 +115,7 @@ MeshMaker::MeshMaker()
 	cout << "Currently, this program has minimal validation. Please input"
 		<< "\n\tvalid filenames and locations when prompted." << endl;
 	
-	cout << "Please input the frame of reference for everything: ";
-	cin >> visualization_ref_frame;
+	init_reference_frame();
 	view = new Hullify_View("convex_hull/", &visualization_ref_frame);
 	bounds = new MeshBound(visualization_ref_frame, view);
 
@@ -136,6 +137,30 @@ MeshMaker::MeshMaker()
 	view->add_topic_no_queue("adept_wrist_orientation", pose_type);
 }
 
+void MeshMaker::init_reference_frame()
+{
+	string input;
+	while(1){
+		cout << "Please input the frame of reference for everything: "
+			<< "\n\t0 - new\n\t1 - /adept_combined: ";
+		cin >> input;
+
+		if (input == "0"){
+			cout << "Please input the reference frame (with leading slash): ";
+			cin >> visualization_ref_frame;
+
+		} else if (input == "1"){
+			visualization_ref_frame = "/adept_combined";
+
+		} else {
+			cout << "Invalid entry (must be 0, or 1)" << endl;
+			continue;
+		}
+
+		break;
+	}
+}
+
 void MeshMaker::init_input_topic()
 {
 	string input;
@@ -143,7 +168,8 @@ void MeshMaker::init_input_topic()
 		cout << "What is the input pointcloud topic for this meshing node?"
 			<< "\n\t0 - new\n\t1 - /testing/default"
 			<< "\n\t2 - /flor/worldmodel/ocs/dist_query_pointcloud_result"
-			<< "\n\t3 - /kinect/selected_cloud: ";
+			<< "\n\t3 - /kinect/selected_cloud (manual box entry): "
+			<< "\n\t4 - /selected_points/transformed (plugin selection): ";
 		cin >> input;
 
 		if (input == "0"){
@@ -159,8 +185,11 @@ void MeshMaker::init_input_topic()
 		} else if (input == "3"){
 			in_topic_name = "/kinect/selected_cloud";
 
-		} else {
-			cout << "Invalid entry (must be 0, 1, or 2)" << endl;
+		} else if (input == "4"){
+			in_topic_name = "/selected_points/transformed";
+
+		}else {
+			cout << "Invalid entry (must be 0, 1, 2, 3, or 4)" << endl;
 			continue;
 		}
 
@@ -306,39 +335,40 @@ bool MeshMaker::is_valid_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 geometry_msgs::PoseStamped MeshMaker::get_wrist_orientation(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question)
 {
 	Axes reference_axes, goal_axes;
-	reference_axes.x_axis = Eigen::Vector3d(1, 0, 0);
-	reference_axes.y_axis = Eigen::Vector3d(0, 1, 0);
-	reference_axes.z_axis = Eigen::Vector3d(0, 0, 1);
-
-	Eigen::Matrix3d principal_axes = get_principal_axes(pts_in_question);
-	goal_axes.x_axis = principal_axes.col(1);
-	goal_axes.y_axis = principal_axes.col(2);
-	goal_axes.z_axis = principal_axes.col(0);
-
-	if (!vecs_are_equal(goal_axes.y_axis.cross(goal_axes.z_axis), goal_axes.x_axis)){
-		cout << "We gave ourselves invalid PCA axes!!!!!" << endl;
-		goal_axes.x_axis = - goal_axes.x_axis;
-	}
+	reference_axes = mk_standard_coordinate_axes();
+	goal_axes = get_goal_axes(pts_in_question);
 
 	Eigen::Vector3d camera_to_centroid = bounds->get_camera_normal_vec();
-	double cos_angle = camera_to_centroid.dot(goal_axes.y_axis) / (camera_to_centroid.norm() * goal_axes.y_axis.norm());
-	double palm_normal_camera_normal_angle = acos(cos_angle);
+	double palm_normal_camera_normal_angle = get_angle_mag_between(camera_to_centroid, goal_axes.y_axis);
 	cout << "palm_normal_camera_normal_angle" << palm_normal_camera_normal_angle << endl;
 	view->publish("original_third_component_axis", view->mk_vector_msg(goal_axes.y_axis));
 	
 	if (palm_normal_camera_normal_angle > M_PI/2){
 		goal_axes.x_axis = -goal_axes.x_axis;
 		goal_axes.y_axis = -goal_axes.y_axis;
-	} else if (isnan(palm_normal_camera_normal_angle) && cos_angle < 0) {
-		goal_axes.x_axis = -goal_axes.x_axis;
-		goal_axes.y_axis = -goal_axes.y_axis;
 	}
 
 	Eigen::Quaterniond pose_quat = get_axes_transformation(reference_axes, goal_axes);
-	Eigen::Vector3d offset = -(goal_axes.y_axis / goal_axes.y_axis.norm()) * (0.12); //Offset by 8 centimeters out of palm.
+	Eigen::Vector3d offset = -(goal_axes.y_axis / goal_axes.y_axis.norm()) * (0.12); //Offset by 12 centimeters out of palm.
 
 	view->publish("end_effector_with_offset", view->mk_pt_msg(bounds->get_centroid() + offset));
 	return view->mk_pose_msg(pose_quat, bounds->get_centroid() + offset);
+}
+
+Axes MeshMaker::get_goal_axes(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question)
+{
+	Axes goal_axes;
+	Eigen::Matrix3d principal_axes = get_principal_axes(pts_in_question);
+	goal_axes.x_axis = principal_axes.col(1);
+	goal_axes.y_axis = principal_axes.col(2);
+	goal_axes.z_axis = principal_axes.col(0);
+
+	if (!vecs_are_equal(goal_axes.y_axis.cross(goal_axes.z_axis), goal_axes.x_axis)){
+		//cout << "We gave ourselves invalid PCA axes!!!!!" << endl;
+		goal_axes.x_axis = - goal_axes.x_axis;
+	}
+
+	return goal_axes;
 }
 
 Eigen::Matrix3d MeshMaker::get_principal_axes(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question)

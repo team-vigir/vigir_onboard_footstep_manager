@@ -5,8 +5,6 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /MotionPlanning1/Scene Geometry1
-        - /TF1
-        - /TF1/Frames1
       Splitter Ratio: 0.74256
     Tree Height: 268
   - Class: rviz/Help
@@ -360,7 +358,7 @@ Visualization Manager:
       Marker Topic: /convex_hull/hull_mesh
       Name: Marker
       Namespaces:
-        plane_ns: true
+        {}
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -451,20 +449,6 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
-    - Class: rviz/TF
-      Enabled: false
-      Frame Timeout: 15
-      Frames:
-        All Enabled: false
-      Marker Scale: 1
-      Name: TF
-      Show Arrows: true
-      Show Axes: true
-      Show Names: true
-      Tree:
-        {}
-      Update Interval: 0
-      Value: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -488,15 +472,15 @@ Visualization Manager:
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.457598
-        Y: -0.268415
-        Z: 2.23518e-07
+        X: 0.637958
+        Y: -0.268556
+        Z: 2.5332e-07
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.289797
+      Pitch: 0.219797
       Target Frame: base_link
       Value: XYOrbit (rviz)
-      Yaw: 4.98998
+      Yaw: 3.59498
     Saved: ~
 Window Geometry:
   Displays:
@@ -512,5 +496,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1375
-  X: 58
-  Y: 24
+  X: 57
+  Y: -4

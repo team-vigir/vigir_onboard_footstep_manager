@@ -25,6 +25,7 @@ public:
 	void transform_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg);
 
 private:
+	void perform_transform(sensor_msgs::PointCloud& temp_cloud, sensor_msgs::PointCloud& converted_temp_cloud);
 	ros::NodeHandle nh;
 
 	string end_frame;
@@ -70,8 +71,25 @@ void PointcloudTransformer::transform_cloud(const sensor_msgs::PointCloud2::Cons
 
 	in_cloud.header.frame_id = new_frame;
 	sensor_msgs::convertPointCloud2ToPointCloud(in_cloud, temp_cloud);
-	camera_to_kinect_transform.transformPointCloud(end_frame, temp_cloud, converted_temp_cloud);
+	perform_transform(temp_cloud, converted_temp_cloud);
 	sensor_msgs::convertPointCloudToPointCloud2(converted_temp_cloud, out_cloud);
 
 	rviz_plugin_selected_pts_transform.publish(out_cloud);
+}
+
+void PointcloudTransformer::perform_transform(sensor_msgs::PointCloud& temp_cloud, sensor_msgs::PointCloud& converted_temp_cloud)
+{
+	ros::Duration wait_period(0.1);
+	while(1){
+		try{
+			ros::Time now = ros::Time::now();
+			camera_to_kinect_transform.waitForTransform(end_frame, temp_cloud.header.frame_id, now, ros::Duration(0.5));
+			camera_to_kinect_transform.transformPointCloud(end_frame, temp_cloud, converted_temp_cloud);
+			break;
+		
+		} catch (...){
+			cout << "tf exception caused in perform_transform." << endl;
+			wait_period.sleep();
+		}
+	}
 }
