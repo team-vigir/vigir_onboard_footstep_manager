@@ -86,10 +86,10 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES kinect_ptcloud_converter
-#  CATKIN_DEPENDS openni_launch roscpp rospy sensor_msgs std_msgs tf visualization_msgs
-#  DEPENDS system_lib
+  #INCLUDE_DIRS src
+  #LIBRARIES kinect_ptcloud_converter
+  CATKIN_DEPENDS roscpp rospy sensor_msgs std_msgs tf visualization_msgs geometry_msgs flor_perception_msgs
+  #DEPENDS system_lib
 )
 
 ###########
@@ -112,14 +112,17 @@ include_directories(
 add_executable(kinect_ptcloud_converter_node src/kinect_ptcloud_node.cpp)
 target_link_libraries(kinect_ptcloud_converter_node ${catkin_LIBRARIES})
 set_target_properties(kinect_ptcloud_converter_node PROPERTIES COMPILE_FLAGS "-Wall -g")
+add_dependencies(kinect_ptcloud_converter_node ${catkin_EXPORTED_TARGETS})
 
 add_executable(raycast_request_test src/raycast_retrieval_test.cpp)
 target_link_libraries(raycast_request_test ${catkin_LIBRARIES})
 set_target_properties(raycast_request_test PROPERTIES COMPILE_FLAGS "-Wall -g")
+add_dependencies(raycast_request_test ${catkin_EXPORTED_TARGETS})
 
 add_executable(kinect_slow_publish src/kinect_slow_publish.cpp)
 target_link_libraries(kinect_slow_publish ${catkin_LIBRARIES})
 set_target_properties(kinect_slow_publish PROPERTIES COMPILE_FLAGS "-Wall -g")
+add_dependencies(kinect_slow_publish ${catkin_EXPORTED_TARGETS})
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
