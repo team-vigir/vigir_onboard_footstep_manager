@@ -62,9 +62,9 @@ namespace Atlas_Sim_Ros_Control
 
 
       for (size_t i = 0; i < joint_state_.position.size(); ++i){
+
         hardware_interface::JointStateHandle state_handle(joint_names_[i], &joint_state_.position[i], &joint_state_.velocity[i], &joint_state_.velocity[i]);
         joint_state_interface_.registerHandle(state_handle);
-
 
         hardware_interface::JointHandle pos_handle(joint_state_interface_.getHandle(joint_names_[i]), &jointcommands.position[i]);
         position_joint_interface_.registerHandle(pos_handle);
@@ -76,7 +76,6 @@ namespace Atlas_Sim_Ros_Control
         effort_joint_interface_.registerHandle(effort_handle);
 
         jointcommands.position[i] = joint_state_.position[i];
-
       }
 
       registerInterface(&joint_state_interface_);

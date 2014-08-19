@@ -2,5 +2,5 @@
 atlas_control:
   force_torque_sensor_controller:
     type: "force_torque_sensor_controller/ForceTorqueSensorController"
-    publish_rate: 50
+    publish_rate: 1000
 
