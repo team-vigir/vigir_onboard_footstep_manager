@@ -13,7 +13,9 @@ find_package(catkin REQUIRED COMPONENTS
   message_filters
   std_msgs
   sensor_msgs
+  shape_msgs
   visualization_msgs
+  message_generation
 )
 
 find_package(Eigen REQUIRED)
@@ -53,11 +55,10 @@ find_package(PCL REQUIRED)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+   FILES
+   Mesh_and_bounds.msg
+ )
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -74,10 +75,11 @@ find_package(PCL REQUIRED)
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(
+   DEPENDENCIES
+   std_msgs 
+   shape_msgs
+ )
 
 ###################################
 ## catkin specific configuration ##
@@ -91,7 +93,7 @@ find_package(PCL REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES hullify
-#  CATKIN_DEPENDS other_catkin_pkg
+  CATKIN_DEPENDS message_runtime
 #  DEPENDS system_lib
 )
 
