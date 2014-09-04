@@ -3,6 +3,7 @@
 #include "visualization_msgs/Marker.h"
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/Point.h>
+#include <hullify/Mesh_and_bounds.h>
 
 #include "pcl/ros/conversions.h"
 #include <pcl_conversions/pcl_conversions.h>
@@ -53,11 +54,12 @@ class MeshMaker{
 		void init_mesh_name();
 		pcl::PolygonMesh::Ptr mk_mesh(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
 		void convert_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg);
-	    bool get_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg, pcl::PointCloud<pcl::PointXYZ>::Ptr intermediate_cloud);
-	    bool is_valid_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
-	    geometry_msgs::PoseStamped get_wrist_orientation(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
-	    Axes get_goal_axes(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
+		bool get_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg, pcl::PointCloud<pcl::PointXYZ>::Ptr intermediate_cloud);
+		bool is_valid_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+		geometry_msgs::PoseStamped get_wrist_orientation(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
+		Axes get_goal_axes(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
 		Eigen::Matrix3d get_principal_axes(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
+		void send_hull_and_planes_to_openrave(string& mesh_full_abs_path);
 		
 		ros::NodeHandle n;
 		ros::Subscriber cloud_input;
@@ -130,11 +132,13 @@ MeshMaker::MeshMaker()
 
 	visualization_msgs::Marker marker_type;
 	geometry_msgs::PoseStamped pose_type;
+	hullify::Mesh_and_bounds openrave_type;
 	view->add_mesh_topic(mesh_base_name);
 	view->add_topic_no_queue("principal_axis", marker_type);
 	view->add_topic_no_queue("end_effector_with_offset", marker_type);
 	view->add_topic_no_queue("original_third_component_axis", marker_type);
 	view->add_topic_no_queue("adept_wrist_orientation", pose_type);
+	view->add_topic_no_queue("openrave_params", openrave_type);
 }
 
 void MeshMaker::init_reference_frame()
@@ -248,11 +252,11 @@ void MeshMaker::convert_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg)
 	//Convert PointCloud2 message to PCL's PointCloud<PointXYZ>
 	pcl::PointCloud<pcl::PointXYZ>::Ptr intermediate_cloud (new pcl::PointCloud<pcl::PointXYZ>);
 	if (!get_cloud(msg, intermediate_cloud)){
-        	//Invalid cloud, return nothing.
-        	return;
-    	}
+    	//Invalid cloud, return nothing.
+    	return;
+	}
 
-	//Run qhull (or see comments just below)
+	//Run qhull externally (or see comments just below)
 	pcl::PolygonMesh::Ptr convex_hull = qhull.mk_mesh(intermediate_cloud);
 
 	//In a system where qHull (libqhull5) is v2011.1, the below should work (untested).
@@ -268,7 +272,8 @@ void MeshMaker::convert_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg)
 	geometry_msgs::PoseStamped wrist_pose = get_wrist_orientation(intermediate_cloud);
 	view->publish("adept_wrist_orientation", wrist_pose);
 
-	view->publish_mesh(mesh_base_name, convex_hull);
+	string mesh_full_abs_path = view->publish_mesh(mesh_base_name, convex_hull);
+	send_hull_and_planes_to_openrave(mesh_full_abs_path);
 }
 
 bool MeshMaker::get_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg, pcl::PointCloud<pcl::PointXYZ>::Ptr intermediate_cloud)
@@ -387,3 +392,13 @@ Eigen::Matrix3d MeshMaker::get_principal_axes(pcl::PointCloud<pcl::PointXYZ>::Pt
 	return principal_axes.cast<double>();
 }
 
+void MeshMaker::send_hull_and_planes_to_openrave(string& mesh_full_abs_path)
+{
+	hullify::Mesh_and_bounds openrave_msg;
+
+	openrave_msg.full_abs_mesh_path = mesh_full_abs_path;
+	openrave_msg.bounding_planes[0] = view->mk_shape_plane(bounds->get_plane1());
+	openrave_msg.bounding_planes[1] = view->mk_shape_plane(bounds->get_plane2());
+
+	view->publish("openrave_params", openrave_msg);
+}

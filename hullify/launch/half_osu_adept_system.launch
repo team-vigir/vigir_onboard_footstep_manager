@@ -1,4 +1,0 @@
-<launch>
-	<node type = "hull_tests" name = "hull_tests" pkg = "hullify" output = "screen" launch-prefix = "xterm -e" />
-	<include file = "$(hullify)/launch/osu_adept_common.launch" />
-</launch>

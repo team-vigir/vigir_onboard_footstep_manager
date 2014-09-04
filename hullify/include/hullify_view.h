@@ -18,6 +18,8 @@
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/PolygonStamped.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <hullify/Mesh_and_bounds.h>
+#include <shape_msgs/Plane.h>
 
 #include "pcl/ros/conversions.h"
 #include <pcl_conversions/pcl_conversions.h>
@@ -88,7 +90,8 @@ class Hullify_View {
 		geometry_msgs::Polygon mk_plane_rep_from_bounding_line(Eigen::Vector3d line_pt, Eigen::Vector3d slope, Eigen::Vector3d line_pt_to_bound);
 		geometry_msgs::PoseStamped mk_pose_msg(Eigen::Quaterniond quat, Eigen::Vector3d pose_position);
 		void add_mesh_topic(string base_name);
-		void publish_mesh(string base_name, pcl::PolygonMesh::Ptr output_mesh);
+		string publish_mesh(string base_name, pcl::PolygonMesh::Ptr output_mesh);
+		shape_msgs::Plane mk_shape_plane(pcl::ModelCoefficients plane);
 
 	private:
 		ros::NodeHandle n;

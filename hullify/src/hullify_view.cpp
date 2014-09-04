@@ -114,13 +114,13 @@ void Hullify_View::add_mesh_topic(string base_name)
 //Description: Deletes a previous mesh if it exists
 //	saves the mesh file, publishes the mesh and
 //	updates the previous mesh log
-void Hullify_View::publish_mesh(string base_name, pcl::PolygonMesh::Ptr new_mesh)
+string Hullify_View::publish_mesh(string base_name, pcl::PolygonMesh::Ptr new_mesh)
 {
 	map<string, string>::iterator mesh_info = meshes.find(base_name);
 	if (mesh_info == meshes.end()){
 		cout << "Could not find mesh topic to publish to (" << base_name
 			 << "). Skipping publishing." << endl;
-		return;
+		return "";
 	}
 
 	string full_mesh_path = mk_mesh_path(base_name);
@@ -131,7 +131,7 @@ void Hullify_View::publish_mesh(string base_name, pcl::PolygonMesh::Ptr new_mesh
 	publish(base_name, mesh_msg);
 
 	mesh_info->second = full_mesh_path;
-
+	return full_mesh_path;
 }
 
 void Hullify_View::rm_prev_mesh(map<string, string>::iterator& mesh_info)
@@ -322,4 +322,15 @@ geometry_msgs::PoseStamped Hullify_View::mk_pose_msg(Eigen::Quaterniond quat, Ei
 	pose_msg.pose.orientation.z = quat.z();
 
 	return pose_msg;
+}
+
+shape_msgs::Plane Hullify_View::mk_shape_plane(pcl::ModelCoefficients plane)
+{
+	shape_msgs::Plane out_plane;
+
+	for (int i = 0; i < 4; ++i){
+		out_plane.coef[i] = plane.values[i];
+	}
+
+	return out_plane;
 }

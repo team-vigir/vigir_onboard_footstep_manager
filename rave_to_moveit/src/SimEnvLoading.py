@@ -17,7 +17,6 @@ import math
 
 import plane_filters
 
-
 rospack = rospkg.RosPack()
 rave_to_moveit_path = rospack.get_path('rave_to_moveit')
 

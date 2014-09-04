@@ -1,0 +1,4 @@
+<launch>
+	<node type = "hull_tests" name = "hull_tests" pkg = "hullify" output = "screen" launch-prefix = "xterm -e" />
+	<node type = "convex_hull" name = "convex_hull" pkg = "hullify" output = "screen" />
+</launch>

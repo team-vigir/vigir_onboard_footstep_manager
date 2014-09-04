@@ -479,9 +479,11 @@ pcl::ModelCoefficients MeshBound::get_plane2()
 {
 	pcl::ModelCoefficients out_plane;
 	if (plane2 != pcl::ModelCoefficients::Ptr()){
+		cout << "Sending out plane2" << endl;
 		out_plane = *plane2;
 
 	} else if (plane1 != pcl::ModelCoefficients::Ptr()){
+		cout << "Sending out plane1" << endl;
 		out_plane = *plane1;
 
 	} else {
