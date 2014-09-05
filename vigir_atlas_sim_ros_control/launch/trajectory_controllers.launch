@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<launch>
+
+    <node name="atlas_sim_ros_control" ns="atlas_control" pkg="vigir_atlas_sim_ros_control" type="atlas_sim_ros_control_node" output="screen">
+    </node>
+            
+    <rosparam file="$(find vigir_atlas_sim_ros_control)/config/trajectory_controllers.yaml" command="load"/>
+    <node name="position_trajectory_controller_spawner" pkg="controller_manager" type="spawner" ns="atlas_control" respawn="false" output="screen" args="left_arm_position_trajectory_controller right_arm_position_trajectory_controller torso_position_trajectory_controller left_leg_position_trajectory_controller right_leg_position_trajectory_controller neck_position_trajectory_controller" />
+    
+    <rosparam file="$(find vigir_atlas_sim_ros_control)/config/force_torque_sensor_controller.yaml" command="load"/>
+    <node name="force_torque_sensor_controller_spawner" pkg="controller_manager" type="spawner" ns="atlas_control" respawn="false" output="screen" args="force_torque_sensor_controller" />
+    
+    <rosparam file="$(find vigir_atlas_sim_ros_control)/config/imu_sensor_controller.yaml" command="load"/>
+    <node name="imu_sensor_controller_spawner" pkg="controller_manager" type="spawner" ns="atlas_control" respawn="false" output="screen" args="imu_sensor_controller" />
+
+
+</launch> 
