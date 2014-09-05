@@ -1,6 +1,6 @@
 # trajectory controllers ---------------------------------------
 atlas_control:
-  left_arm_position_trajectory_controller:
+  left_arm_traj_controller:
     type: "position_controllers/JointTrajectoryController"
     joints:
       - l_arm_shy
@@ -26,7 +26,7 @@ atlas_control:
         
     stop_trajectory_duration: 0.0
 
-  right_arm_position_trajectory_controller:
+  right_arm_traj_controller:
     type: "position_controllers/JointTrajectoryController"
     joints:
       - r_arm_shy
@@ -52,7 +52,7 @@ atlas_control:
     
     stop_trajectory_duration: 0.0
     
-  torso_position_trajectory_controller:
+  torso_traj_controller:
     type: "position_controllers/JointTrajectoryController"
     joints:
       - back_bkz
@@ -71,7 +71,7 @@ atlas_control:
     stop_trajectory_duration: 0.0
       
       
-  left_leg_position_trajectory_controller:
+  left_leg_traj_controller:
     type: "position_controllers/JointTrajectoryController"
     joints:
       - l_leg_hpz
@@ -97,7 +97,7 @@ atlas_control:
     
     stop_trajectory_duration: 0.0
       
-  right_leg_position_trajectory_controller:
+  right_leg_traj_controller:
     type: "position_controllers/JointTrajectoryController"
     joints:
       - r_leg_hpz
@@ -123,7 +123,7 @@ atlas_control:
     
     stop_trajectory_duration: 0.0
     
-  neck_position_trajectory_controller:
+  neck_traj_controller:
     type: "position_controllers/JointTrajectoryController"
     joints:
       - neck_ry
