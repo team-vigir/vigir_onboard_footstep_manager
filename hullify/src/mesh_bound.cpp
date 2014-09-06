@@ -50,6 +50,8 @@ void MeshBound::constructor_common()
 	view->add_topic_no_queue("plane1", poly_type);
 	view->add_topic_no_queue("plane2", poly_type);
 	view->add_topic_no_queue("horiz_projected", cloud_type);
+	view->add_topic_no_queue("plane1_normal", marker_type);
+	view->add_topic_no_queue("plane2_normal", marker_type);
 }
 
 //Description: Changes the input cloud, invalidates the centroid
@@ -124,13 +126,15 @@ void MeshBound::construct_planes()
 	Eigen::Vector3d n1 = horiz_normal.cross(v1);
 	Eigen::Vector3d n2 = horiz_normal.cross(v2);
 
+	standardize_plane_normals(n1, n2);
+
 	plane1 = mk_plane(*centroid, n1);
 	plane2 = mk_plane(*centroid, n2);
 
 	cout << "Normal for plane 1: " << endl << n1 << endl;
 	cout << "Normal for plane 2: " << endl << n2 << endl;
-	cout << "v2: " << endl << v2 << endl;
-	cout << "second point: " << endl << init_vec(proj_pts->points[pt_idxs[1]]) << endl;
+	//cout << "v2: " << endl << v2 << endl;
+	//cout << "second point: " << endl << init_vec(proj_pts->points[pt_idxs[1]]) << endl;
 	delete [] pt_idxs;
 }
 
@@ -516,6 +520,14 @@ Eigen::Vector3d MeshBound::get_camera_normal_vec()
 	return Eigen::Vector3d(0, 0, 0);
 }
 
+Eigen::Vector3d MeshBound::get_horiz_normal()
+{
+	if (centroid != NULL){
+		return horiz_normal;
+	}
+
+	return Eigen::Vector3d(0, 0, 0);
+}
 
 /****** Visualization
 **********************************/
@@ -536,7 +548,7 @@ void MeshBound::publish_plane2()
 	view->publish("plane2", plane);
 }
 
- geometry_msgs::PolygonStamped MeshBound::mk_plane_msg(pcl::ModelCoefficients::Ptr plane)
+geometry_msgs::PolygonStamped MeshBound::mk_plane_msg(pcl::ModelCoefficients::Ptr plane)
 {
 	pcl::PointXYZ center ((*centroid)[0], (*centroid)[1], (*centroid)[2]);
 	pcl::PointXYZ max_pt = find_farthest_pt(center, cloud);
@@ -563,6 +575,21 @@ void MeshBound::publish_proj_pts(pcl::PointCloud<pcl::PointXYZ>::Ptr proj_pts)
 	//cout << "One projected point: " << proj_pts->points[0].x << "  " 
 		//<< proj_pts->points[0].y << "  " << proj_pts->points[0].z << endl;
 
+}
+
+void MeshBound::standardize_plane_normals(Eigen::Vector3d& n1, Eigen::Vector3d& n2)
+{
+	if (get_angle_mag_between(n1, camera_normal) < (M_PI / 2)){
+		n1 = -1 * n1;
+	}
+
+	if (get_angle_mag_between(n2, camera_normal) < (M_PI / 2)){
+		cout << "Flipping normal vector 2." << endl;
+		n2 = -1 * n2;
+	}
+
+	view->publish("plane1_normal", view->mk_vector_msg(n1));
+	view->publish("plane2_normal", view->mk_vector_msg(n2));
 }
 
 

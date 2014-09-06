@@ -288,13 +288,13 @@ geometry_msgs::Polygon Hullify_View::mk_plane_rep_from_bounding_line(Eigen::Vect
 
 	//Make a square where orth points to another vertex
 	geometry_msgs::Point32 temp;
-	temp.x = center.x + slope[0]; temp.y = center.y + slope[1]; temp.z = center.z + slope[2];
+	temp.x = center.x + slope[0] - line_pt_to_bound[0]; temp.y = center.y + slope[1] - line_pt_to_bound[1]; temp.z = center.z + slope[2] - line_pt_to_bound[2];
 	out_poly.points.push_back(temp);
 	
 	temp.x -= (2 * slope[0]); temp.y -= (2 * slope[1]); temp.z -= (2 * slope[2]);
 	out_poly.points.push_back(temp);
 
-	temp.x += line_pt_to_bound[0]; temp.y += line_pt_to_bound[1]; temp.z += line_pt_to_bound[2];
+	temp.x += 2*line_pt_to_bound[0]; temp.y += 2*line_pt_to_bound[1]; temp.z += 2*line_pt_to_bound[2];
 	out_poly.points.push_back(temp);
 
 	temp.x += (2 * slope[0]); temp.y += (2 * slope[1]); temp.z += (2 * slope[2]);

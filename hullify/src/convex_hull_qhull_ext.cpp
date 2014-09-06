@@ -60,6 +60,7 @@ class MeshMaker{
 		Axes get_goal_axes(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
 		Eigen::Matrix3d get_principal_axes(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
 		void send_hull_and_planes_to_openrave(string& mesh_full_abs_path);
+		bool are_planes_obtuse();
 		
 		ros::NodeHandle n;
 		ros::Subscriber cloud_input;
@@ -139,6 +140,8 @@ MeshMaker::MeshMaker()
 	view->add_topic_no_queue("original_third_component_axis", marker_type);
 	view->add_topic_no_queue("adept_wrist_orientation", pose_type);
 	view->add_topic_no_queue("openrave_params", openrave_type);
+	view->add_topic_no_queue("v1_in_plane", marker_type);
+	view->add_topic_no_queue("v2_in_plane", marker_type);
 }
 
 void MeshMaker::init_reference_frame()
@@ -400,5 +403,38 @@ void MeshMaker::send_hull_and_planes_to_openrave(string& mesh_full_abs_path)
 	openrave_msg.bounding_planes[0] = view->mk_shape_plane(bounds->get_plane1());
 	openrave_msg.bounding_planes[1] = view->mk_shape_plane(bounds->get_plane2());
 
+	openrave_msg.plane_sep_angle_gt_pi = are_planes_obtuse();
+
 	view->publish("openrave_params", openrave_msg);
+}
+
+bool MeshMaker::are_planes_obtuse()
+{
+	pcl::ModelCoefficients plane1 = bounds->get_plane1();
+	pcl::ModelCoefficients plane2 = bounds->get_plane2();
+
+	Eigen::Vector3d n1(plane1.values[0], plane1.values[1], plane1.values[2]);
+	Eigen::Vector3d n2(plane2.values[0], plane2.values[1], plane2.values[2]);
+	Eigen::Vector3d plane_intersection_vector = n1.cross(n2);
+
+	Eigen::Vector3d ref_vec = n1 + n2;
+
+	Eigen::Vector3d v1_in_plane = -1 * (n1.cross(plane_intersection_vector));
+	Eigen::Vector3d v2_in_plane = n2.cross(plane_intersection_vector);
+
+	view->publish("v1_in_plane", view->mk_vector_msg(v1_in_plane));
+	view->publish("v2_in_plane", view->mk_vector_msg(v2_in_plane));
+
+	double angle = get_angle_mag_between(ref_vec, v1_in_plane);
+	cout << "Angle1: " << angle << endl;
+	angle += get_angle_mag_between(ref_vec, v2_in_plane);
+	cout << "Total angle: " << angle << endl;
+
+	if (angle >= M_PI){
+		cout << "Planes are obtuse!!!" << endl;
+		return true;
+	}
+
+	cout << "Planes are acute!!" << endl;
+	return false;
 }

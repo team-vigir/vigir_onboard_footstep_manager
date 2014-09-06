@@ -61,6 +61,7 @@ class MeshBound {
 		pcl::ModelCoefficients get_plane2();
 		Eigen::Vector3d get_centroid();
 		Eigen::Vector3d get_camera_normal_vec();
+		Eigen::Vector3d get_horiz_normal();
 
 		void publish_centroid();
 		void publish_plane1();
@@ -82,6 +83,7 @@ class MeshBound {
 		bool pt_wraps_past_ref_line(const Eigen::Vector3d& line_norm, pcl::PointXYZ& pt);
 		void calculate_parametric_coefficients_for_proj(int coord1, int coord2, Eigen::Vector3d slope, Eigen::Vector3d line_norm, Eigen::Vector3d pt, double& s, double& t);
 		int* find_max_consecutive_angular_diff(Pt_pos* pt_angles, long num_pts);
+		void standardize_plane_normals(Eigen::Vector3d& n1, Eigen::Vector3d& n2);
 
 		void handle_ptcloud_errors();		
 
