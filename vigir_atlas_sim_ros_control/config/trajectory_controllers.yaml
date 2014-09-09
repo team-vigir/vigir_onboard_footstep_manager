@@ -1,5 +1,4 @@
 # trajectory controllers ---------------------------------------
-atlas_control:
   left_arm_traj_controller:
     type: "position_controllers/JointTrajectoryController"
     joints:

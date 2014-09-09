@@ -287,6 +287,7 @@ try{
 
         // Publish Atlas user mode
         ros::NodeHandle nh;
+        ros::NodeHandle controller_nh("joint_controllers");
 
         ros::Publisher pub_user_mode_ = nh.advertise<std_msgs::String>("/atlas/control_mode",1,true);
         std_msgs::String msg;
@@ -295,7 +296,7 @@ try{
         msg.data = ss.str();
         pub_user_mode_.publish(msg);
 
-        controller_manager::ControllerManager cm(&atlas_sim_ros_control_interface);
+        controller_manager::ControllerManager cm(&atlas_sim_ros_control_interface, controller_nh);
 
         ros::AsyncSpinner spinner(2);
         spinner.start();
