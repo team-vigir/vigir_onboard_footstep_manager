@@ -11,9 +11,13 @@ Qhull_int::~Qhull_int()
 {
     //Destroy the temp file if necessary
     string command = "rm " + in_file_name;
-    system(command.c_str());
+    int res1 = system(command.c_str());
     command = "rm " + res_file_name;
-    system(command.c_str());
+    int res2 = system(command.c_str());
+
+    if (res1 != 0 || res2 != 0){
+	cout << "Trouble deleting qhull IO files. Not a problem if no meshes were created in this session." << endl;
+    }
 
     cout << "Deleted temporary qHull IO text files." << endl;
 }
@@ -27,7 +31,13 @@ pcl::PolygonMesh::Ptr Qhull_int::mk_mesh(pcl::PointCloud<pcl::PointXYZ>::Ptr clo
 	//Execute qhull command here.
 	string command = "qconvex o TO " + res_file_name;
 	command += " < " + in_file_name;
-	system(command.c_str());	
+	int res = system(command.c_str());	
+
+	if (res != 0) {
+		cout << "System() for Qhull's qconvex is returning error: " << res 
+			<< ". Is qhull installed (qhull-bin)?" << endl;
+		exit(1);
+	}
 
 	return qhull_read_results(res_file_name);
 

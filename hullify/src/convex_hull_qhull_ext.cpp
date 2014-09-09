@@ -63,9 +63,9 @@ class MeshMaker{
 		bool are_planes_obtuse();
 		
 		ros::NodeHandle n;
-		ros::Subscriber cloud_input;
+		vector<ros::Subscriber> cloud_input;
 		string visualization_ref_frame;
-		string in_topic_name;
+		vector<string> in_topic_name;
 		string mesh_base_name;
 		//vector<visualization_msgs::Marker> markers;
 		Qhull_int qhull;
@@ -126,10 +126,12 @@ MeshMaker::MeshMaker()
 	init_mesh_name();
 
 	//Initialize subscriber and begin waiting
-	cloud_input = n.subscribe(in_topic_name, 1, &MeshMaker::convert_cloud, this);
+	cloud_input.resize(in_topic_name.size());
+	for (unsigned int i = 0; i < in_topic_name.size(); ++i){
+		cloud_input[i] = n.subscribe(in_topic_name[i], 1, &MeshMaker::convert_cloud, this);
+	}
 
 	cout << "Subscriber Created." << endl;
-	cout << "in_topic: " << in_topic_name << endl;
 
 	visualization_msgs::Marker marker_type;
 	geometry_msgs::PoseStamped pose_type;
@@ -149,7 +151,8 @@ void MeshMaker::init_reference_frame()
 	string input;
 	while(1){
 		cout << "Please input the frame of reference for everything: "
-			<< "\n\t0 - new\n\t1 - /adept_combined: ";
+			<< "\n\t0 - new\n\t1 - /adept_combined"
+			<< "\n\t2 - /world (Atlas): ";
 		cin >> input;
 
 		if (input == "0"){
@@ -159,6 +162,8 @@ void MeshMaker::init_reference_frame()
 		} else if (input == "1"){
 			visualization_ref_frame = "/adept_combined";
 
+		} else if (input == "2") {
+			visualization_ref_frame = "/world";
 		} else {
 			cout << "Invalid entry (must be 0, or 1)" << endl;
 			continue;
@@ -174,28 +179,32 @@ void MeshMaker::init_input_topic()
 	while(1){
 		cout << "What is the input pointcloud topic for this meshing node?"
 			<< "\n\t0 - new\n\t1 - /testing/default"
-			<< "\n\t2 - /flor/worldmodel/ocs/dist_query_pointcloud_result"
-			<< "\n\t3 - /kinect/selected_cloud (manual box entry): "
+			<< "\n\t2 - Atlas's multiple cloud topics"
+			<< "\n\t3 - /kinect/selected_cloud (manual box entry)"
 			<< "\n\t4 - /selected_points/transformed (plugin selection): ";
 		cin >> input;
-
+		
+		in_topic_name.reserve(3);
 		if (input == "0"){
 			cout << "Please input the topic name: ";
-			cin >> in_topic_name;
+			cin >> input;
+			in_topic_name.push_back(input);
 
 		} else if (input == "1"){
-			in_topic_name = "/testing/default";
+			in_topic_name.push_back("/testing/default");
 
 		} else if (input == "2"){
-			in_topic_name = "/flor/worldmodel/ocs/dist_query_pointcloud_result";
+			in_topic_name.push_back("/flor/worldmodel/ocs/dist_query_pointcloud_result");
+			in_topic_name.push_back("/flor/worldmodel/ocs/stereo_cloud_result");
+			in_topic_name.push_back("/flor/worldmodel/ocs/cloud_result");
 
 		} else if (input == "3"){
-			in_topic_name = "/kinect/selected_cloud";
+			in_topic_name.push_back("/kinect/selected_cloud");
 
 		} else if (input == "4"){
-			in_topic_name = "/selected_points/transformed";
+			in_topic_name.push_back("/selected_points/transformed");
 
-		}else {
+		} else {
 			cout << "Invalid entry (must be 0, 1, 2, 3, or 4)" << endl;
 			continue;
 		}
@@ -255,8 +264,8 @@ void MeshMaker::convert_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg)
 	//Convert PointCloud2 message to PCL's PointCloud<PointXYZ>
 	pcl::PointCloud<pcl::PointXYZ>::Ptr intermediate_cloud (new pcl::PointCloud<pcl::PointXYZ>);
 	if (!get_cloud(msg, intermediate_cloud)){
-    	//Invalid cloud, return nothing.
-    	return;
+	    	//Invalid cloud, return nothing.
+	    	return;
 	}
 
 	//Run qhull externally (or see comments just below)
@@ -419,8 +428,8 @@ bool MeshMaker::are_planes_obtuse()
 
 	Eigen::Vector3d ref_vec = n1 + n2;
 
-	Eigen::Vector3d v1_in_plane = -1 * (n1.cross(plane_intersection_vector));
-	Eigen::Vector3d v2_in_plane = n2.cross(plane_intersection_vector);
+	Eigen::Vector3d v1_in_plane = (n1.cross(plane_intersection_vector));
+	Eigen::Vector3d v2_in_plane = -1 * n2.cross(plane_intersection_vector);
 
 	view->publish("v1_in_plane", view->mk_vector_msg(v1_in_plane));
 	view->publish("v2_in_plane", view->mk_vector_msg(v2_in_plane));

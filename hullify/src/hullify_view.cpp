@@ -222,6 +222,7 @@ visualization_msgs::Marker Hullify_View::mk_vector_msg(Eigen::Vector3d vector_re
 	geometry_msgs::Point temp;
 	temp.x = temp.y = temp.z = 0;
 	normal_marker.points.push_back(temp);
+	vector_rep.normalize();
 	temp.x = vector_rep[0]; temp.y = vector_rep[1]; temp.z = vector_rep[2];
 	normal_marker.points.push_back(temp);
 

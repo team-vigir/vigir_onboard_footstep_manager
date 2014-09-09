@@ -18,7 +18,7 @@
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/PolygonStamped.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <hullify/Mesh_and_bounds.h>
+#include "hullify/Mesh_and_bounds.h"
 #include <shape_msgs/Plane.h>
 
 #include "pcl/ros/conversions.h"

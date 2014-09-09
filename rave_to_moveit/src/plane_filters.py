@@ -1,8 +1,8 @@
 ##Jackson's Modifications
-def generate_potential_grasps(gmodel, plane1, plane2):
+def generate_potential_grasps(gmodel, bounding_plane_msg):
 	params = get_params(gmodel)
 
-	params['approachrays'] = filter_approach_rays(params['approachrays'], plane1, plane2)
+	params['approachrays'] = filter_approach_rays(params['approachrays'], bounding_plane_msg)
 
 	gmodel.generate(**params)
 
@@ -20,15 +20,31 @@ def get_params(gmodel):
 
 	return all_params
 
-def filter_approach_rays(initial_approachrays, plane1, plane2):
-	cur_rays = filter_plane(initial_approachrays, plane1)
-	cur_rays = filter_plane(cur_rays, plane2)
+def filter_approach_rays(initial_approachrays, bounding_plane_msg):
+	cur_rays = filter_bounding_planes(initial_approachrays, plane1, plane2, planes_are_obtuse)
 
-	#cur_rays = random_ray_selection(cur_rays)
+	#cur_rays = random_ray_selection(cur_rays, num_rays)
 
 	return cur_rays
 
+def filter_bounding_planes(initial_approach_rays, bplane1, bplane2, planes_are_obtuse):
+	out_rays = []
+	for ray in rays:
+		pt_to_bplane1_dist = get_plane_dist(ray[0:3], bplane1)
+		pt_to_bplane2_dist = get_plane_dist(ray[0:3], bplane2)
+
+		if pt_to_bplane1_dist >= 0 and pt_to_bplane2_dist >= 0:
+			print "Point inside both bounding planes."
+			out_rays.append(ray)
+
+		elif (not planes_are_obtuse) and (pt_to_bplane1_dist >= 0 or pt_to_bplane2_dist >= 0):
+			print "Point inside one of the obtuse planes."
+			out_rays.append(ray)
+
+	return out_rays
+
 # The normal of the planes should point TOWARD THE ROBOT
+#	A positive plane distance is included in the result rays
 def filter_plane(rays, plane_coefficient_list):
 	out_rays = []
 	for ray in rays:
@@ -59,5 +75,6 @@ def get_plane_dist(pt, plane_coefficient_list):
 def full_info_callback(msg):
 	print "Got a Mesh_and_bounds_msg!"
 	print "Plane1: ", msg.bounding_planes[0]
-	main(msg.full_abs_mesh_path, msg.bounding_planes[0], msg.bounding_planes[1])
+	print "Plane2: ", msg.bounding_planes[1]
+	main(msg)
 

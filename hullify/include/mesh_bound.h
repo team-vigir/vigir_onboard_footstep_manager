@@ -69,6 +69,7 @@ class MeshBound {
 		
 	private:
 		void constructor_common();
+		void init_perception_link();
 		void find_centroid();
 		void get_camera_normal();
 		void find_horiz_normal();

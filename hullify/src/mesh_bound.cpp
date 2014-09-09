@@ -39,6 +39,7 @@ void MeshBound::constructor_common()
 	plane2 = pcl::ModelCoefficients::Ptr();
 	//perception_link = "/hokuyo_link";
 	perception_link = "/camera_link";
+	init_perception_link();
 
 	visualization_msgs::Marker marker_type;
 	geometry_msgs::PolygonStamped poly_type;
@@ -52,6 +53,34 @@ void MeshBound::constructor_common()
 	view->add_topic_no_queue("horiz_projected", cloud_type);
 	view->add_topic_no_queue("plane1_normal", marker_type);
 	view->add_topic_no_queue("plane2_normal", marker_type);
+}
+
+void MeshBound::init_perception_link()
+{
+	string input;
+	cout << "What is the name of the main Perception Link?" << endl
+		<< "\t0 - new\n\t1 - /hokuyo_link (Atlas)"
+		<< "\n\t2 - /camera_link (kinect): ";
+	cin >> input;
+	while (1){
+		if (input == "0") {
+			cout << "New Perception link: ";
+			cin >> perception_link;
+
+		} else if (input == "1") {
+			perception_link = "/hokuyo_link";
+
+		} else if (input == "2") {
+			perception_link = "/camera_link";
+
+		} else {
+			cout << "Invalid entry. Must be 0, 1, or 2" << endl;
+			continue;
+		}
+
+		cout << "Perception link: " << perception_link << endl;
+		break;
+	}
 }
 
 //Description: Changes the input cloud, invalidates the centroid
