@@ -1,8 +1,20 @@
 ##Jackson's Modifications
-def generate_potential_grasps(gmodel, bounding_plane_msg):
+def generate_potential_grasps(gmodel, mesh_and_bounds_msg):
 	params = get_params(gmodel)
 
-	params['approachrays'] = filter_approach_rays(params['approachrays'], bounding_plane_msg)
+	filtered_ray_idxs = filter_approach_rays(params['approachrays'], mesh_and_bounds_msg)
+	#params['approachrays'] = gmodel.computeBoxApproachRays()
+	#print dir(params['approachrays'])
+	#print "__doc__: ", params['approachrays'].__doc__
+	#print "__module__: ", params['approachrays'].__mod__#, params['approachrays'].__module__
+	#print "base: ", params['approachrays'].bases
+	#print params['approachrays']
+	print filtered_ray_idxs
+	
+	#print "standoffs: ", params['standoffs']
+	#print "rolls: ", params['rolls']
+	params['approachrays'] = params['approachrays'].take(filtered_ray_idxs, axis=0)
+	print params['approachrays']
 
 	gmodel.generate(**params)
 
@@ -11,37 +23,40 @@ def get_params(gmodel):
 
 	all_locals = locals()
 	all_params = {}
-	for key, value in all_locals:
+	for key, value in all_locals.iteritems():
 		if key != 'gmodel':
 			all_params[key] = value
-
-	print all_params, "\nExiting!"
-	exit()
 
 	return all_params
 
 def filter_approach_rays(initial_approachrays, bounding_plane_msg):
-	cur_rays = filter_bounding_planes(initial_approachrays, plane1, plane2, planes_are_obtuse)
+	plane1 = bounding_plane_msg.bounding_planes[0].coef
+	plane2 = bounding_plane_msg.bounding_planes[1].coef
+	planes_are_obtuse = bounding_plane_msg.plane_sep_angle_gt_pi
+	cur_ray_idxs = filter_bounding_planes(initial_approachrays, plane1, plane2, planes_are_obtuse)
 
-	#cur_rays = random_ray_selection(cur_rays, num_rays)
+	#cur_rays = random_ray_selection(cur_rays, num_return_rays)
 
-	return cur_rays
+	return cur_ray_idxs
 
 def filter_bounding_planes(initial_approach_rays, bplane1, bplane2, planes_are_obtuse):
-	out_rays = []
-	for ray in rays:
+	out_ray_idxs = []
+	for idx, ray in enumerate(initial_approach_rays):
 		pt_to_bplane1_dist = get_plane_dist(ray[0:3], bplane1)
 		pt_to_bplane2_dist = get_plane_dist(ray[0:3], bplane2)
 
 		if pt_to_bplane1_dist >= 0 and pt_to_bplane2_dist >= 0:
-			print "Point inside both bounding planes."
-			out_rays.append(ray)
+			print ray, " inside both bounding planes."
+			out_ray_idxs.append(idx)
 
-		elif (not planes_are_obtuse) and (pt_to_bplane1_dist >= 0 or pt_to_bplane2_dist >= 0):
-			print "Point inside one of the obtuse planes."
-			out_rays.append(ray)
+		elif planes_are_obtuse and (pt_to_bplane1_dist >= 0 or pt_to_bplane2_dist >= 0):
+			print ray, " inside one of the obtuse planes."
+			out_ray_idxs.append(idx)
+		else:
+			print ray, " is not inside the bounded region. dist1: ", pt_to_bplane1_dist, " dist2: ", pt_to_bplane2_dist
 
-	return out_rays
+	print "Initial ray count: ", len(initial_approach_rays), " final count: ", len(out_ray_idxs)
+	return out_ray_idxs
 
 # The normal of the planes should point TOWARD THE ROBOT
 #	A positive plane distance is included in the result rays
@@ -72,9 +87,4 @@ def get_plane_dist(pt, plane_coefficient_list):
 	dist = (dot + plane_coefficient_list[3]) / norm_len
 	return dist
 
-def full_info_callback(msg):
-	print "Got a Mesh_and_bounds_msg!"
-	print "Plane1: ", msg.bounding_planes[0]
-	print "Plane2: ", msg.bounding_planes[1]
-	main(msg)
 

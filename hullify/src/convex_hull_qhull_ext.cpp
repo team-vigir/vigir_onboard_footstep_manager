@@ -63,6 +63,7 @@ class MeshMaker{
 		bool are_planes_obtuse();
 		
 		ros::NodeHandle n;
+		ros::Subscriber grasp_pipeline_trigger;
 		vector<ros::Subscriber> cloud_input;
 		string visualization_ref_frame;
 		vector<string> in_topic_name;
@@ -126,6 +127,7 @@ MeshMaker::MeshMaker()
 	init_mesh_name();
 
 	//Initialize subscriber and begin waiting
+	//grasp_pipeline_trigger = n.subscribe(ALBERTOS_TRIGGER_TOPIC_NAME_GOES_HERE, 1, &MeshMaker::begin, this);
 	cloud_input.resize(in_topic_name.size());
 	for (unsigned int i = 0; i < in_topic_name.size(); ++i){
 		cloud_input[i] = n.subscribe(in_topic_name[i], 1, &MeshMaker::convert_cloud, this);
@@ -140,7 +142,7 @@ MeshMaker::MeshMaker()
 	view->add_topic_no_queue("principal_axis", marker_type);
 	view->add_topic_no_queue("end_effector_with_offset", marker_type);
 	view->add_topic_no_queue("original_third_component_axis", marker_type);
-	view->add_topic_no_queue("adept_wrist_orientation", pose_type);
+	view->add_topic_no_queue("openrave_grasps", pose_type);
 	view->add_topic_no_queue("openrave_params", openrave_type);
 	view->add_topic_no_queue("v1_in_plane", marker_type);
 	view->add_topic_no_queue("v2_in_plane", marker_type);
@@ -151,8 +153,8 @@ void MeshMaker::init_reference_frame()
 	string input;
 	while(1){
 		cout << "Please input the frame of reference for everything: "
-			<< "\n\t0 - new\n\t1 - /adept_combined"
-			<< "\n\t2 - /world (Atlas): ";
+			<< "\n\t0 - new\n\t1 - /world (Atlas)"
+			<< "\n\t2 - /adept_combined: ";
 		cin >> input;
 
 		if (input == "0"){
@@ -160,10 +162,10 @@ void MeshMaker::init_reference_frame()
 			cin >> visualization_ref_frame;
 
 		} else if (input == "1"){
-			visualization_ref_frame = "/adept_combined";
+			visualization_ref_frame = "/world";
 
 		} else if (input == "2") {
-			visualization_ref_frame = "/world";
+			visualization_ref_frame = "/adept_combined";
 		} else {
 			cout << "Invalid entry (must be 0, or 1)" << endl;
 			continue;
@@ -178,8 +180,8 @@ void MeshMaker::init_input_topic()
 	string input;
 	while(1){
 		cout << "What is the input pointcloud topic for this meshing node?"
-			<< "\n\t0 - new\n\t1 - /testing/default"
-			<< "\n\t2 - Atlas's multiple cloud topics"
+			<< "\n\t0 - new\n\t1 - (Atlas's multiple cloud topics)"
+			<< "\n\t2 - /testing/default"
 			<< "\n\t3 - /kinect/selected_cloud (manual box entry)"
 			<< "\n\t4 - /selected_points/transformed (plugin selection): ";
 		cin >> input;
@@ -191,12 +193,12 @@ void MeshMaker::init_input_topic()
 			in_topic_name.push_back(input);
 
 		} else if (input == "1"){
-			in_topic_name.push_back("/testing/default");
-
-		} else if (input == "2"){
 			in_topic_name.push_back("/flor/worldmodel/ocs/dist_query_pointcloud_result");
 			in_topic_name.push_back("/flor/worldmodel/ocs/stereo_cloud_result");
 			in_topic_name.push_back("/flor/worldmodel/ocs/cloud_result");
+
+		} else if (input == "2"){
+			in_topic_name.push_back("/testing/default");
 
 		} else if (input == "3"){
 			in_topic_name.push_back("/kinect/selected_cloud");
@@ -247,6 +249,17 @@ void MeshMaker::listen()
 
 }
 
+/*void MeshMaker::begin()
+{
+	cout << "Trigger received." << endl;
+	convert_cloud();
+}
+
+void MeshMaker::accept_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg)
+{
+
+}*/
+
 
 //Function: convert_cloud
 //Description: The workhorse; this function receives pointcloud
@@ -282,7 +295,7 @@ void MeshMaker::convert_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg)
 	bounds->publish_centroid();
 
 	geometry_msgs::PoseStamped wrist_pose = get_wrist_orientation(intermediate_cloud);
-	view->publish("adept_wrist_orientation", wrist_pose);
+	view->publish("openrave_grasps", wrist_pose);
 
 	string mesh_full_abs_path = view->publish_mesh(mesh_base_name, convex_hull);
 	send_hull_and_planes_to_openrave(mesh_full_abs_path);
@@ -408,6 +421,8 @@ void MeshMaker::send_hull_and_planes_to_openrave(string& mesh_full_abs_path)
 {
 	hullify::Mesh_and_bounds openrave_msg;
 
+	openrave_msg.header.frame_id = visualization_ref_frame;
+	openrave_msg.header.stamp = ros::Time::now();
 	openrave_msg.full_abs_mesh_path = mesh_full_abs_path;
 	openrave_msg.bounding_planes[0] = view->mk_shape_plane(bounds->get_plane1());
 	openrave_msg.bounding_planes[1] = view->mk_shape_plane(bounds->get_plane2());

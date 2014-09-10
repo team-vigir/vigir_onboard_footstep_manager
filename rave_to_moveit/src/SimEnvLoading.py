@@ -2,11 +2,12 @@
 import rospy
 from openravepy import *
 import rospkg
+import os
 import numpy, time
 from openravepy import ikfast
 from std_msgs.msg import String
 from geometry_msgs.msg import PoseArray
-from hullify import Mesh_and_bounds
+from hullify.msg import Mesh_and_bounds
 
 import geometry_msgs
 from tf import transformations as tr
@@ -17,18 +18,29 @@ import math
 
 import plane_filters
 
-rospack = rospkg.RosPack()
-rave_to_moveit_path = rospack.get_path('rave_to_moveit')
-
-env=Environment()
-env.Load(rave_to_moveit_path + '/scenes/test2.env.xml')
-env.SetViewer('qtcoin')
+env = None
 obj_name = ''
+
+def set_openrave_environment_vars():
+	rospack = rospkg.RosPack()
+	rave_to_moveit_path = rospack.get_path('rave_to_moveit')
+	if os.environ.get("OPENRAVE_DATA", "") != "":
+		os.environ["OPENRAVE_DATA"] = rave_to_moveit_path + os.environ["OPENRAVE_DATA"]
+	else:
+		os.environ["OPENRAVE_DATA"] = rave_to_moveit_path
+
+	#print "set env vars"
+
+def build_environment():
+	global env
+	env = Environment()
+	env.Load('scenes/test2.env.xml')
+	env.SetViewer('qtcoin')
 
 #The main function grabs the environment you want, setting the robot as the first
 #robot tag put into your env file. Then it sets up the ikfast, the target for the robot
 #and the database grasps are store in. Then send to the TransformToPose function
-def main(mesh_name): 
+def main(mesh_and_bounds_msg): 
 	#If there was a previous object, delete it:
 	global env
 	global obj_name
@@ -39,27 +51,27 @@ def main(mesh_name):
 	else:
 		print "No object in simulation environment to remove."
 
-	#Must be placed in the openrave openrave/src/ folder
-	#newObject = mesh_name 
-	newObject = raw_input("Enter filename (include tag) for loading: ")
+	newObject = mesh_and_bounds_msg.full_abs_mesh_path
+	#newObject = raw_input("Enter filename (include tag) for loading: ")
 	env.Load(newObject)
 	comp = newObject.split('.')
 	path = comp[0].split('/')
 	obj_name = path[-1]
-	print "obj_name: ", obj_name
+	print "obj_name (grasp_target): ", obj_name
 
 	#REMOVE CODE!
 	#remove = env.GetKinBody(comp[0])
 	#env.RemoveKinBody(remove)
 
-	grasp_target = raw_input("Please enter name of object you want to grasp: ")
-	#grasp_target = obj_name
+	#grasp_target = raw_input("Please enter name of object you want to grasp: ")
+	grasp_target = obj_name
 
 	robot = env.GetRobots()[0]
 	ikmodel = databases.inversekinematics.InverseKinematicsModel(robot,iktype=IkParameterizationType.Transform6D)
 	if not ikmodel.load():
 		ikmodel.autogenerate()
 	target = env.GetKinBody(grasp_target)
+	print "Got target!"
 
 	aabb=env.GetRobots()[0].ComputeAABB()
 	#env.assertGreaterEqual(aabb.pos()[-1]-aabb.extents()[-1],0)
@@ -71,18 +83,12 @@ def main(mesh_name):
 
 	gmodel = databases.grasping.GraspingModel(robot,target)
 
-	#gmodel.load()
-	approachrays = gmodel.computeSphereApproachRays(delta=0.1, normalanglerange=0.05,directiondelta=0.4)
-	print approachrays
 	if not gmodel.load():
-		print "lol, not loaded. We need to autogenerate anyway"
-	#gmodel.numthreads = 6
-	#print gmodel.numthreads
-	#gmodel.autogenerate()
+		plane_filters.generate_potential_grasps(gmodel, mesh_and_bounds_msg)
 	
-	generate_potential_grasps(gmodel)
+	#generate_potential_grasps(gmodel)
 
-	graspnum = input("Please enter number of valid grasps: ")
+	graspnum = input("Please enter number of valid grasps to return: ")
 	validgrasps, validindicees = gmodel.computeValidGrasps(returnnum=graspnum)
 	basemanip = interfaces.BaseManipulation(robot)
 	print dir(gmodel)
@@ -101,7 +107,7 @@ def main(mesh_name):
 		
 		print pose_array
 
-	publish_poses(pose_array)
+	publish_poses(pose_array, mesh_and_bounds_msg.header.frame_id)
 	#raveLogInfo((T))
 
 #The TransformToPose function will take the trajectory that openrave finds and
@@ -119,29 +125,28 @@ def TransformToPose( G ):
 	pose = geometry_msgs.msg.Pose( position, orientation )
 	return pose
 
-def callback(data):
-	rospy.loginfo(rospy.get_caller_id()+"I heard %s",data.data)
-	main(data.data)
-
-def listen_STLpath():
-	rospy.Subscriber("object_path", String, callback)
+def listen_for_meshes():
+	rospy.Subscriber("convex_hull/openrave_params", Mesh_and_bounds, full_info_callback)
 	rospy.spin()
 
-def publish_poses(pose_array):
+def full_info_callback(msg):
+	print "Got a Mesh_and_bounds_msg!"
+	print "Plane1: ", msg.bounding_planes[0]
+	print "Plane2: ", msg.bounding_planes[1]
+	main(msg)
+
+def publish_poses(pose_array, mesh_ref_frame):
 	pub = rospy.Publisher('adept_wrist_orientation', PoseArray, queue_size=10)
 	pose_msg = PoseArray()
 	pose_msg.poses = pose_array
 	pose_msg.header.stamp = rospy.Time.now()
-	pose_msg.header.frame_id = "/world"
+	pose_msg.header.frame_id = mesh_ref_frame
 	
 	pub.publish(pose_msg)
 
-#def test_publish():
-#	rostopic pub object_path std_msgs/String "hello there"
-	
-
-## To avoid forward declarations, we need to call this last
 if __name__ == '__main__':
 	rospy.init_node('SimEnvLoading', anonymous=True)
-	main('lol')
-	#listen_STLpath()
+	set_openrave_environment_vars()
+	build_environment()
+	#main('lol')
+	listen_for_meshes()

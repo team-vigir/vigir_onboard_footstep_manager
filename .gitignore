@@ -8,3 +8,4 @@ qtcreator-build
 *~
 *.backup
 **/.svn/
+*.pyc
