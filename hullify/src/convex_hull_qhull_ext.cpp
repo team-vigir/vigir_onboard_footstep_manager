@@ -59,8 +59,9 @@ class MeshMaker{
 		geometry_msgs::PoseStamped get_wrist_orientation(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
 		Axes get_goal_axes(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
 		Eigen::Matrix3d get_principal_axes(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
-		void send_hull_and_planes_to_openrave(string& mesh_full_abs_path);
+		void send_hull_and_planes_to_openrave(string& mesh_full_abs_path, pcl::PolygonMesh::Ptr convex_hull);
 		bool are_planes_obtuse();
+		void mk_mesh_msg(shape_msgs::Mesh& msg, pcl::PolygonMesh::Ptr convex_hull);
 		
 		ros::NodeHandle n;
 		ros::Subscriber grasp_pipeline_trigger;
@@ -298,7 +299,7 @@ void MeshMaker::convert_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg)
 	view->publish("openrave_grasps", wrist_pose);
 
 	string mesh_full_abs_path = view->publish_mesh(mesh_base_name, convex_hull);
-	send_hull_and_planes_to_openrave(mesh_full_abs_path);
+	send_hull_and_planes_to_openrave(mesh_full_abs_path, convex_hull);
 }
 
 bool MeshMaker::get_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg, pcl::PointCloud<pcl::PointXYZ>::Ptr intermediate_cloud)
@@ -417,13 +418,14 @@ Eigen::Matrix3d MeshMaker::get_principal_axes(pcl::PointCloud<pcl::PointXYZ>::Pt
 	return principal_axes.cast<double>();
 }
 
-void MeshMaker::send_hull_and_planes_to_openrave(string& mesh_full_abs_path)
+void MeshMaker::send_hull_and_planes_to_openrave(string& mesh_full_abs_path, pcl::PolygonMesh::Ptr convex_hull)
 {
 	hullify::Mesh_and_bounds openrave_msg;
 
 	openrave_msg.header.frame_id = visualization_ref_frame;
 	openrave_msg.header.stamp = ros::Time::now();
 	openrave_msg.full_abs_mesh_path = mesh_full_abs_path;
+	mk_mesh_msg(openrave_msg.convex_hull, convex_hull);
 	openrave_msg.bounding_planes[0] = view->mk_shape_plane(bounds->get_plane1());
 	openrave_msg.bounding_planes[1] = view->mk_shape_plane(bounds->get_plane2());
 
@@ -461,4 +463,32 @@ bool MeshMaker::are_planes_obtuse()
 
 	cout << "Planes are acute!!" << endl;
 	return false;
+}
+
+void MeshMaker::mk_mesh_msg(shape_msgs::Mesh& msg, pcl::PolygonMesh::Ptr convex_hull)
+{
+	msg.vertices.clear();
+	msg.triangles.clear();
+
+	pcl::PointCloud<pcl::PointXYZ> cloud;
+	pcl::fromPCLPointCloud2(convex_hull->cloud, cloud);
+	long num_pts = cloud.points.size();
+	geometry_msgs::Point pt;
+	for (long i = 0; i < num_pts; ++i){
+		pt.x = cloud.points[i].x;
+		pt.y = cloud.points[i].y;
+		pt.z = cloud.points[i].z;
+		msg.vertices.push_back(pt);
+	}
+	
+	long num_facets = convex_hull->polygons.size();
+	shape_msgs::MeshTriangle cur_facet;
+	short j;
+	for (long i = 0; i < num_facets; ++i){
+		for (j = 0; j < 3; ++j){
+			cur_facet.vertex_indices[j] = (convex_hull->polygons)[i].vertices[j];
+		}
+
+		msg.triangles.push_back(cur_facet);
+	}
 }

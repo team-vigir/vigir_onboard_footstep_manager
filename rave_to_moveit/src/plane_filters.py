@@ -1,4 +1,6 @@
-##Jackson's Modifications
+import random
+from numpy import array
+
 def generate_potential_grasps(gmodel, mesh_and_bounds_msg):
 	params = get_params(gmodel)
 
@@ -15,6 +17,13 @@ def generate_potential_grasps(gmodel, mesh_and_bounds_msg):
 	#print "rolls: ", params['rolls']
 	params['approachrays'] = params['approachrays'].take(filtered_ray_idxs, axis=0)
 	print params['approachrays']
+	print params['graspingnoise']
+	#params['graspingnoise'] = (0, 0)
+	#params['normalanglerange'] = 0
+	#params['spheredelta'] = 0
+	params['standoffs'] = array([0])
+	#params['directiondelta'] = 0
+	#gmodel.numthreads = 3
 
 	gmodel.generate(**params)
 
@@ -35,7 +44,8 @@ def filter_approach_rays(initial_approachrays, bounding_plane_msg):
 	planes_are_obtuse = bounding_plane_msg.plane_sep_angle_gt_pi
 	cur_ray_idxs = filter_bounding_planes(initial_approachrays, plane1, plane2, planes_are_obtuse)
 
-	#cur_rays = random_ray_selection(cur_rays, num_return_rays)
+	num_return_rays = 5
+	cur_ray_idxs = random_ray_selection(cur_ray_idxs, num_return_rays)
 
 	return cur_ray_idxs
 
@@ -57,6 +67,9 @@ def filter_bounding_planes(initial_approach_rays, bplane1, bplane2, planes_are_o
 
 	print "Initial ray count: ", len(initial_approach_rays), " final count: ", len(out_ray_idxs)
 	return out_ray_idxs
+
+def random_ray_selection(ray_idxs, num_return_rays):
+	return random.sample(ray_idxs, num_return_rays)
 
 # The normal of the planes should point TOWARD THE ROBOT
 #	A positive plane distance is included in the result rays

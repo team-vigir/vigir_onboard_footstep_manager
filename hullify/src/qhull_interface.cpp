@@ -29,7 +29,7 @@ pcl::PolygonMesh::Ptr Qhull_int::mk_mesh(pcl::PointCloud<pcl::PointXYZ>::Ptr clo
 	qhull_save_file(in_file_name, cloud);
 	
 	//Execute qhull command here.
-	string command = "qconvex o TO " + res_file_name;
+	string command = "qconvex Qt o TO " + res_file_name;
 	command += " < " + in_file_name;
 	int res = system(command.c_str());	
 

@@ -19,7 +19,13 @@ import math
 import plane_filters
 
 env = None
-obj_name = ''
+obj_name = ""
+cur_hand = "l_robotiq"
+
+#Environment var name->[file_name, name_in_system]
+ENV_NAME = 1
+FILE_PATH = 0
+loaded_hands = {"l_robotiq":['robots/robotiq.dae', '']}
 
 def set_openrave_environment_vars():
 	rospack = rospkg.RosPack()
@@ -33,9 +39,25 @@ def set_openrave_environment_vars():
 
 def build_environment():
 	global env
+
 	env = Environment()
+	#load_hands()
 	env.Load('scenes/test2.env.xml')
+
 	env.SetViewer('qtcoin')
+
+def load_hands():
+	global env
+	global loaded_hands
+
+	for hand_name in loaded_hands:
+		robot = env.ReadRobotXMLFile(loaded_hands[hand_name][FILE_PATH])
+		if robot is None:
+			print "Cannot load robot: ", loaded_hands[hand_name][FILE_PATH]
+		else:
+			env.AddRobot(robot)
+			loaded_hands[hand_name][ENV_NAME] = robot.GetName()
+			print "Loaded ", loaded_hands[hand_name][ENV_NAME]
 
 #The main function grabs the environment you want, setting the robot as the first
 #robot tag put into your env file. Then it sets up the ikfast, the target for the robot
@@ -44,50 +66,31 @@ def main(mesh_and_bounds_msg):
 	#If there was a previous object, delete it:
 	global env
 	global obj_name
-	if obj_name != '':
-		print "Removing object: ", obj_name
-		remove = env.GetKinBody(obj_name)
-		env.RemoveKinBody(remove)
-	else:
-		print "No object in simulation environment to remove."
-
-	newObject = mesh_and_bounds_msg.full_abs_mesh_path
-	#newObject = raw_input("Enter filename (include tag) for loading: ")
-	env.Load(newObject)
-	comp = newObject.split('.')
-	path = comp[0].split('/')
-	obj_name = path[-1]
+	
+	remove_prev_object()
+	obj_name = load_new_object(mesh_and_bounds_msg.full_abs_mesh_path)
 	print "obj_name (grasp_target): ", obj_name
-
-	#REMOVE CODE!
-	#remove = env.GetKinBody(comp[0])
-	#env.RemoveKinBody(remove)
-
+	
 	#grasp_target = raw_input("Please enter name of object you want to grasp: ")
 	grasp_target = obj_name
 
+	print "robots: ", env.GetRobots()
 	robot = env.GetRobots()[0]
+	#robot = env.GetRobot(loaded_hands[cur_hand][ENV_NAME])
 	ikmodel = databases.inversekinematics.InverseKinematicsModel(robot,iktype=IkParameterizationType.Transform6D)
 	if not ikmodel.load():
 		ikmodel.autogenerate()
 	target = env.GetKinBody(grasp_target)
 	print "Got target!"
 
-	aabb=env.GetRobots()[0].ComputeAABB()
-	#env.assertGreaterEqual(aabb.pos()[-1]-aabb.extents()[-1],0)
-	if aabb.pos()[-1]-aabb.extents()[-1] < 0:
-		print "Bounding box assertion failed in main()"
-		print aabb.pos()[-1]
-		print aabb.extents()[-1]
-		exit()
-
 	gmodel = databases.grasping.GraspingModel(robot,target)
-
+	#print dir(gmodel.grasper)
+	#print gmodel.grasper.__class__
+	#lol = input ("Pausing... Please input: ")
 	if not gmodel.load():
 		plane_filters.generate_potential_grasps(gmodel, mesh_and_bounds_msg)
-	
-	#generate_potential_grasps(gmodel)
 
+	
 	graspnum = input("Please enter number of valid grasps to return: ")
 	validgrasps, validindicees = gmodel.computeValidGrasps(returnnum=graspnum)
 	basemanip = interfaces.BaseManipulation(robot)
@@ -109,6 +112,24 @@ def main(mesh_and_bounds_msg):
 
 	publish_poses(pose_array, mesh_and_bounds_msg.header.frame_id)
 	#raveLogInfo((T))
+
+def remove_prev_object():
+	if obj_name != '':
+		print "Removing object: ", obj_name
+		remove = env.GetKinBody(obj_name)
+		env.RemoveKinBody(remove)
+	else:
+		print "No object in simulation environment to remove."
+
+
+def load_new_object(mesh_path):
+	#newObject = raw_input("Enter filename (include tag) for loading: ")
+	env.Load(mesh_path)
+	no_extension = mesh_path.split('.')
+	path_array = no_extension[0].split('/')
+	obj_name = path_array[-1]
+
+	return obj_name
 
 #The TransformToPose function will take the trajectory that openrave finds and
 #transform them into orientation and position, for setting up a pose that can be
@@ -133,7 +154,44 @@ def full_info_callback(msg):
 	print "Got a Mesh_and_bounds_msg!"
 	print "Plane1: ", msg.bounding_planes[0]
 	print "Plane2: ", msg.bounding_planes[1]
+	
+	replace_target(msg.convex_hull)
+	
 	main(msg)
+
+def replace_target(convex_hull):
+	new_mesh = TriMesh()
+	new_mesh.vertices = convex_hull.vertices
+	print "convex_hull indices: ", convex_hull.triangles
+	new_mesh.indices = []
+	for triangle_mesh in convex_hull.triangles:
+		new_mesh.indices.extend(triangle_mesh.vertex_indices)
+
+	grasp_target = env.GetKinBody('grasp_target')
+	grasp_target.InitFromTrimesh(new_mesh)
+	print new_mesh.indices
+	lol = raw_input("Pausing...")
+
+def listen_for_LR_hand():
+	return rospy.Subscriber("grasping_hand_selection", String, set_hand_callback)
+
+def set_hand_callback(msg):
+	global cur_hand
+	global loaded_hands
+	if msg.data == "L" or msg.data == "l":
+		hand_type = os.environ.get("FLOR_LEFT_HAND_TYPE", "")
+	elif msg.data == "R" or msg.data == "r":
+		hand_type = os.environ.get("FLOR_RIGHT_HAND_TYPE", "")
+	else:
+		print "Unsupported arm selection in OpenRAVE/set_hand_callback(): ", msg.data
+
+	if hand_type in loaded_hands:
+		print "New hand in use: ", hand_type
+		cur_hand = hand_type
+	else:
+		print "Unsupported hand: ", hand_type, " reusing current hand: ", cur_hand
+		print "Please add ", hand_type, " to the loaded_hands dictionary in SimEnvLoading.py"
+	
 
 def publish_poses(pose_array, mesh_ref_frame):
 	pub = rospy.Publisher('adept_wrist_orientation', PoseArray, queue_size=10)
@@ -149,4 +207,5 @@ if __name__ == '__main__':
 	set_openrave_environment_vars()
 	build_environment()
 	#main('lol')
+	hand_subscriber = listen_for_LR_hand()
 	listen_for_meshes()
