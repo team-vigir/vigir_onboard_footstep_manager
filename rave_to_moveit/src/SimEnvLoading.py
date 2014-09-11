@@ -43,7 +43,14 @@ def build_environment():
 	env = Environment()
 	#load_hands()
 	env.Load('scenes/test2.env.xml')
-
+	
+	hand = env.GetRobots()[0]
+	links = hand.GetLinks()
+	ex_trimesh = links[0].GetCollisionData()
+	print "indices: ", ex_trimesh.indices
+	print "vertices: ", ex_trimesh.vertices
+	print dir(ex_trimesh)
+	lol = raw_input("Pause....")
 	env.SetViewer('qtcoin')
 
 def load_hands():
@@ -161,15 +168,22 @@ def full_info_callback(msg):
 
 def replace_target(convex_hull):
 	new_mesh = TriMesh()
-	new_mesh.vertices = convex_hull.vertices
+	new_mesh.vertices = []
+	for vertex in convex_hull.vertices:
+		new_mesh.vertices.append([vertex.x, vertex.y, vertex.z])
 	print "convex_hull indices: ", convex_hull.triangles
 	new_mesh.indices = []
 	for triangle_mesh in convex_hull.triangles:
-		new_mesh.indices.extend(triangle_mesh.vertex_indices)
+		new_mesh.indices.append(list(triangle_mesh.vertex_indices))
 
-	grasp_target = env.GetKinBody('grasp_target')
-	grasp_target.InitFromTrimesh(new_mesh)
 	print new_mesh.indices
+	print new_mesh.vertices
+	print dir(new_mesh)
+	grasp_target = env.GetKinBody('grasp_target')
+	env.RemoveKinBody(grasp_target)
+	grasp_target.InitFromTrimesh(new_mesh)
+	env.AddKinBody(grasp_target)
+
 	lol = raw_input("Pausing...")
 
 def listen_for_LR_hand():
