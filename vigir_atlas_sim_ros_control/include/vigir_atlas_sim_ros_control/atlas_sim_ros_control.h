@@ -58,7 +58,7 @@
 #include <atlas_msgs/AtlasState.h>
 
 
-namespace Atlas_Sim_Ros_Control
+namespace atlas_sim_ros_control
 {
 
 class Atlas_Sim_Ros_Control : public hardware_interface::RobotHW
