@@ -111,7 +111,6 @@ namespace atlas_sim_ros_control
       joint_state_.effort[i] = (atlas_state_.effort[i]);
     }
 
-    //for (size_t i = 0; i < 3; ++i){
     left_hand_force_[0] = atlas_state_.l_hand.force.x;
     left_hand_force_[1] = atlas_state_.l_hand.force.y;
     left_hand_force_[2] = atlas_state_.l_hand.force.z;
