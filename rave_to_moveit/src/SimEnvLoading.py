@@ -21,10 +21,12 @@ import plane_filters
 env = None
 obj_name = ""
 cur_hand = "l_robotiq"
+grasp_target = 'grasp_target'
+arm_type = "L"
 
 #Environment var name->[file_name, name_in_system]
-ENV_NAME = 1
 FILE_PATH = 0
+ENV_NAME = 1
 loaded_hands = {"l_robotiq":['robots/robotiq.dae', '']}
 
 def set_openrave_environment_vars():
@@ -44,13 +46,6 @@ def build_environment():
 	#load_hands()
 	env.Load('scenes/test2.env.xml')
 	
-	hand = env.GetRobots()[0]
-	links = hand.GetLinks()
-	ex_trimesh = links[0].GetCollisionData()
-	print "indices: ", ex_trimesh.indices
-	print "vertices: ", ex_trimesh.vertices
-	print dir(ex_trimesh)
-	lol = raw_input("Pause....")
 	env.SetViewer('qtcoin')
 
 def load_hands():
@@ -73,13 +68,13 @@ def main(mesh_and_bounds_msg):
 	#If there was a previous object, delete it:
 	global env
 	global obj_name
-	
-	remove_prev_object()
-	obj_name = load_new_object(mesh_and_bounds_msg.full_abs_mesh_path)
-	print "obj_name (grasp_target): ", obj_name
+	global grasp_target
+
+	#remove_prev_object()
+	#obj_name = load_new_object(mesh_and_bounds_msg.full_abs_mesh_path)
+	#print "obj_name (grasp_target): ", obj_name
 	
 	#grasp_target = raw_input("Please enter name of object you want to grasp: ")
-	grasp_target = obj_name
 
 	print "robots: ", env.GetRobots()
 	robot = env.GetRobots()[0]
@@ -95,11 +90,14 @@ def main(mesh_and_bounds_msg):
 	#print gmodel.grasper.__class__
 	#lol = input ("Pausing... Please input: ")
 	if not gmodel.load():
-		plane_filters.generate_potential_grasps(gmodel, mesh_and_bounds_msg)
+		params = plane_filters.generate_grasp_params(gmodel, mesh_and_bounds_msg)
+		gmodel.generate(**params)
 
 	
 	graspnum = input("Please enter number of valid grasps to return: ")
-	validgrasps, validindicees = gmodel.computeValidGrasps(returnnum=graspnum)
+	validgrasps, validindices = gmodel.computeValidGrasps(returnnum=graspnum)
+	print "validgrasps: ", validgrasps
+	print "validindices: ", validindices
 	basemanip = interfaces.BaseManipulation(robot)
 	print dir(gmodel)
 	pose_array = []
@@ -171,20 +169,20 @@ def replace_target(convex_hull):
 	new_mesh.vertices = []
 	for vertex in convex_hull.vertices:
 		new_mesh.vertices.append([vertex.x, vertex.y, vertex.z])
-	print "convex_hull indices: ", convex_hull.triangles
+	#print "convex_hull indices: ", convex_hull.triangles
 	new_mesh.indices = []
 	for triangle_mesh in convex_hull.triangles:
 		new_mesh.indices.append(list(triangle_mesh.vertex_indices))
 
-	print new_mesh.indices
-	print new_mesh.vertices
-	print dir(new_mesh)
+	#print new_mesh.indices
+	#print new_mesh.vertices
+	#print dir(new_mesh)
 	grasp_target = env.GetKinBody('grasp_target')
 	env.RemoveKinBody(grasp_target)
 	grasp_target.InitFromTrimesh(new_mesh)
 	env.AddKinBody(grasp_target)
 
-	lol = raw_input("Pausing...")
+	#lol = raw_input("Pausing...")
 
 def listen_for_LR_hand():
 	return rospy.Subscriber("grasping_hand_selection", String, set_hand_callback)
@@ -192,10 +190,15 @@ def listen_for_LR_hand():
 def set_hand_callback(msg):
 	global cur_hand
 	global loaded_hands
+	global arm_type
+
 	if msg.data == "L" or msg.data == "l":
 		hand_type = os.environ.get("FLOR_LEFT_HAND_TYPE", "")
+		arm_type = "L"
+
 	elif msg.data == "R" or msg.data == "r":
 		hand_type = os.environ.get("FLOR_RIGHT_HAND_TYPE", "")
+		arm_type = "R"
 	else:
 		print "Unsupported arm selection in OpenRAVE/set_hand_callback(): ", msg.data
 

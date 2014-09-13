@@ -1,6 +1,6 @@
 <Robot>
   <Robot file="Adept_Viper_s650.dae"></Robot>
-  <Robot prefix="hand_" file="s-model_articulated.dae"></Robot>
+  <Robot prefix="hand_" file="robotiq.dae"></Robot>
   <kinbody>
   	<body name = "hand_palm">
   		<offsetfrom>Adept_Viper_650_Interface_Plate</offsetfrom>

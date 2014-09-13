@@ -1,10 +1,12 @@
 import random
 from numpy import array
+import math
 
-def generate_potential_grasps(gmodel, mesh_and_bounds_msg):
+def generate_grasp_params(gmodel, mesh_and_bounds_msg):
 	params = get_params(gmodel)
 
 	filtered_ray_idxs = filter_approach_rays(params['approachrays'], mesh_and_bounds_msg)
+	#params['rolls'] = limit_wrist_rolling()
 	#params['approachrays'] = gmodel.computeBoxApproachRays()
 	#print dir(params['approachrays'])
 	#print "__doc__: ", params['approachrays'].__doc__
@@ -25,7 +27,8 @@ def generate_potential_grasps(gmodel, mesh_and_bounds_msg):
 	#params['directiondelta'] = 0
 	#gmodel.numthreads = 3
 
-	gmodel.generate(**params)
+	#gmodel.generate(**params)
+	return params
 
 def get_params(gmodel):
 	preshapes,standoffs,rolls,approachrays, graspingnoise,forceclosure,forceclosurethreshold,checkgraspfn,manipulatordirections,translationstepmult,finestep,friction,avoidlinks,plannername = gmodel.autogenerateparams()
@@ -44,7 +47,7 @@ def filter_approach_rays(initial_approachrays, bounding_plane_msg):
 	planes_are_obtuse = bounding_plane_msg.plane_sep_angle_gt_pi
 	cur_ray_idxs = filter_bounding_planes(initial_approachrays, plane1, plane2, planes_are_obtuse)
 
-	num_return_rays = 5
+	num_return_rays = 10
 	cur_ray_idxs = random_ray_selection(cur_ray_idxs, num_return_rays)
 
 	return cur_ray_idxs
@@ -101,3 +104,12 @@ def get_plane_dist(pt, plane_coefficient_list):
 	return dist
 
 
+def limit_wrist_rolling():
+	wrist_orientations = []
+	cur_angle = -math.pi / 2
+	angle_step = math.pi / 4
+	for i in range(0, 5):
+		wrist_orientations.append(cur_angle)
+		cur_angle += angle_step
+
+	return wrist_orientations
