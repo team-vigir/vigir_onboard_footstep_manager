@@ -210,6 +210,7 @@ namespace atlas_sim_ros_control
       rosnode->getParam(param_string,
                         jointcommands.kp_position[i]);
       //jointcommands.kp_position[i] = 1000.0;
+      jointcommands.kp_position[i] *= 10.0;
 
       rosnode->getParam("/atlas_controller/gains/" + pieces[2] + "/i",
                         jointcommands.ki_position[i]);
