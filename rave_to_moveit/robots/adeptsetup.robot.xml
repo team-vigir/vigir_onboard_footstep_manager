@@ -20,5 +20,5 @@
   	<closingdirection><!--1 1 1--> 1 1 1 1 1 1 1 1 1</closingdirection>
   	<direction>0 0 1</direction>
   </manipulator>
-  <!--<jointvalues>0 0 0 0 0 0 0 0 0</jointvalues> -->
+  <jointvalues>0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</jointvalues>
 </Robot>

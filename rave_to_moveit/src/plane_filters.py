@@ -28,7 +28,7 @@ def generate_grasp_params(gmodel, mesh_and_bounds_msg):
 	#params['normalanglerange'] = 0
 	#params['spheredelta'] = 0
 	params['standoffs'] = array([0])
-	params['finestep'] = 0.05
+	params['finestep'] = 0.01
 	#params['directiondelta'] = 0
 	#gmodel.numthreads = 3
 
@@ -47,10 +47,12 @@ def get_params(gmodel):
 	return all_params
 
 def filter_approach_rays(initial_approachrays, bounding_plane_msg):
-	plane1 = bounding_plane_msg.bounding_planes[0].coef
-	plane2 = bounding_plane_msg.bounding_planes[1].coef
+	plane1 = bounding_plane_msg.ninety_degree_bounding_planes[0].coef
+	plane2 = bounding_plane_msg.ninety_degree_bounding_planes[1].coef
 	planes_are_obtuse = bounding_plane_msg.plane_sep_angle_gt_pi
-	cur_ray_idxs = filter_bounding_planes(initial_approachrays, plane1, plane2, planes_are_obtuse)
+
+	#The ninety degree planes will never be obtuse
+	cur_ray_idxs = filter_bounding_planes(initial_approachrays, plane1, plane2, False)
 
 	num_return_rays = 10
 	cur_ray_idxs = random_ray_selection(cur_ray_idxs, num_return_rays)

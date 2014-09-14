@@ -45,8 +45,10 @@ def build_environment():
 	env = Environment()
 	#load_hands()
 	env.Load('scenes/test2.env.xml')
-	
+	#env.Load('adeptsetup.robot.xml')
+
 	env.SetViewer('qtcoin')
+	raw_input("pausing...")
 
 def load_hands():
 	global env
@@ -157,8 +159,8 @@ def listen_for_meshes():
 
 def full_info_callback(msg):
 	print "Got a Mesh_and_bounds_msg!"
-	print "Plane1: ", msg.bounding_planes[0]
-	print "Plane2: ", msg.bounding_planes[1]
+	print "Plane1: ", msg.ninety_degree_bounding_planes[0]
+	print "Plane2: ", msg.ninety_degree_bounding_planes[1]
 	
 	replace_target(msg.convex_hull)
 	
