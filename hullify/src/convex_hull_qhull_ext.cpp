@@ -60,7 +60,10 @@ class MeshMaker{
 		Axes get_goal_axes(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
 		Eigen::Matrix3d get_principal_axes(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
 		void send_hull_and_planes_to_openrave(string& mesh_full_abs_path, pcl::PolygonMesh::Ptr convex_hull);
-		bool are_planes_obtuse();
+		bool are_planes_obtuse(const Eigen::Vector3d& n1, const Eigen::Vector3d& n2);
+		void set_bounding_planes(hullify::Mesh_and_bounds& openrave_msg)
+		void record_planes(hullify::Mesh_and_bounds& msg, Eigen::Vector3d& know_p_proper, Eigen::Vector3d& know_p_improper, Eigen::Vector3d& ninety_normal, Eigen::Vector3d& zero_normal)
+		void set_openrave_msg_planes(hullify::Mesh_and_bounds& msg, Eigen::Vector3d strict_vec1, Eigen::Vector3d strict_vec2, Eigen::Vector3d relaxed_vec1, Eigen::Vector3d relaxed_vec2)
 		void mk_mesh_msg(shape_msgs::Mesh& msg, pcl::PolygonMesh::Ptr convex_hull);
 		
 		ros::NodeHandle n;
@@ -69,6 +72,7 @@ class MeshMaker{
 		string visualization_ref_frame;
 		vector<string> in_topic_name;
 		string mesh_base_name;
+		bool using_left_hand;
 		//vector<visualization_msgs::Marker> markers;
 		Qhull_int qhull;
 		MeshBound* bounds;
@@ -103,7 +107,9 @@ pcl::PolygonMesh::Ptr MeshMaker::mk_mesh(pcl::PointCloud<pcl::PointXYZ>::Ptr clo
 
 	pcl::ConvexHull<pcl::PointXYZ> hull;
 	hull.setInputCloud(cloud);
+	cout << "Prereconstruct" << endl;
 	hull.reconstruct(*output);
+	cout << "Post-reconstruct" << endl;
 
 	output->header.stamp = 1;
 	output->header.frame_id = visualization_ref_frame;
@@ -116,6 +122,7 @@ pcl::PolygonMesh::Ptr MeshMaker::mk_mesh(pcl::PointCloud<pcl::PointXYZ>::Ptr clo
 MeshMaker::MeshMaker()
 {
 	visualization_ref_frame = "/world";
+	using_left_hand = true;
 	//cout << "Hi Jack!" << endl;
 	cout << "Currently, this program has minimal validation. Please input"
 		<< "\n\tvalid filenames and locations when prompted." << endl;
@@ -250,9 +257,16 @@ void MeshMaker::listen()
 
 }
 
-/*void MeshMaker::begin()
+/*void MeshMaker::begin(const std_msgs::String::ConstPtr& msg)
 {
 	cout << "Trigger received." << endl;
+	if (msg->data == "L" || msg->data == "l"){
+		cout << "Using Left side for grasping." << endl;
+		using_left_hand = true;
+	} else {
+		cout << "Using right side for grasping." << endl;
+		using_right_hand = false;
+	}
 	convert_cloud();
 }
 
@@ -426,21 +440,63 @@ void MeshMaker::send_hull_and_planes_to_openrave(string& mesh_full_abs_path, pcl
 	openrave_msg.header.stamp = ros::Time::now();
 	openrave_msg.full_abs_mesh_path = mesh_full_abs_path;
 	mk_mesh_msg(openrave_msg.convex_hull, convex_hull);
-	openrave_msg.bounding_planes[0] = view->mk_shape_plane(bounds->get_plane1());
-	openrave_msg.bounding_planes[1] = view->mk_shape_plane(bounds->get_plane2());
+	set_bounding_planes(openrave_msg);
+	//openrave_msg.bounding_planes[0] = view->mk_shape_plane(bounds->get_plane1());
+	//openrave_msg.bounding_planes[1] = view->mk_shape_plane(bounds->get_plane2());
 
-	openrave_msg.plane_sep_angle_gt_pi = are_planes_obtuse();
+	//openrave_msg.plane_sep_angle_gt_pi = are_planes_obtuse();
 
 	view->publish("openrave_params", openrave_msg);
 }
 
-bool MeshMaker::are_planes_obtuse()
+void MeshMaker::set_bounding_planes(hullify::Mesh_and_bounds& openrave_msg)
 {
-	pcl::ModelCoefficients plane1 = bounds->get_plane1();
-	pcl::ModelCoefficients plane2 = bounds->get_plane2();
+	Eigen::Vector3d p1_normal = bounds->get_plane1_normal();
+	Eigen::Vector3d p2_normal = bounds->get_plane2_normal();
+	Eigen::Vector3d camera_to_cenrtoid = bounds->get_camera_normal();
+	Eigen::Vector3d horiz_normal = bounds->get_horiz_normal();
 
-	Eigen::Vector3d n1(plane1.values[0], plane1.values[1], plane1.values[2]);
-	Eigen::Vector3d n2(plane2.values[0], plane2.values[1], plane2.values[2]);
+	Eigen::Vector3d zero_degree_plane_normal;
+	if (using_left_hand){
+		zero_degree_plane_normal = horiz_normal.cross(camera_to_centroid);
+	} else {
+		zero_degree_plane_normal = -horiz_normal.cross(camera_to_centroid);
+	}
+
+	Eigen::Vector3d ninety_degree_plane_normal = -camera_to_centroid;
+
+	if (get_angle_mag_between(-camera_to_centroid, p1_normal) > (M_PI / 2)){
+		//p2 is in the proper side
+		record_planes(msg, p2_normal, p1_normal, ninety_degree_plane_normal, zero_degree_plane_normal);
+
+	} else {
+		//p1 is in the proper side
+		record_planes(msg, p1_normal, p2_normal, ninety_degree_plane_normal, zero_degree_plane_normal);
+	}
+}
+
+void MeshMaker::record_planes(hullify::Mesh_and_bounds& msg, Eigen::Vector3d& know_p_proper, Eigen::Vector3d& know_p_improper, Eigen::Vector3d& ninety_normal, Eigen::Vector3d& zero_normal)
+{
+	if (get_angle_mag_between(zero_normal, know_p_proper) > (M_PI / 2)){
+		set_openrave_msg_planes(msg, know_p_proper, zero_normal, ninety_normal, know_p_improper);			
+		openrave_msg.planes_sep_angle_gt_pi = are_planes_obtuse(ninety_normal, know_p_improper);
+	} else {
+		set_openrave_msg_planes(msg, ninety_normal, zero_normal, know_p_proper, know_p_improper);			
+		openrave_msg.planes_sep_angle_gt_pi = are_planes_obtuse(know_p_proper, know_p_improper);
+	}
+}
+
+void MeshMaker::set_openrave_msg_planes(hullify::Mesh_and_bounds& msg, Eigen::Vector3d strict_vec1, Eigen::Vector3d strict_vec2, Eigen::Vector3d relaxed_vec1, Eigen::Vector3d relaxed_vec2)
+{
+	Eigen::Vector3d centroid = bounds->get_centroid();
+	msg.stringent_bounding_planes[0] = mk_plane_msg(mk_plane(centroid. strict_vec1));
+	msg.stringent_bounding_planes[1] = mk_plane_msg(mk_plane(centroid, strict_vec2));
+	msg.relaxed_bounding_planes[0] = mk_plane_msg(mk_plane(centroid, relaxed_vec1));
+	msg.relaxed_bounding_planes[1] = mk_plane_msg(mk_plane(centroid, relaxed_vec2));
+}
+
+bool MeshMaker::are_planes_obtuse(const Eigen::Vector3d& n1, const Eigen::Vector3d& n2)
+{
 	Eigen::Vector3d plane_intersection_vector = n1.cross(n2);
 
 	Eigen::Vector3d ref_vec = n1 + n2;

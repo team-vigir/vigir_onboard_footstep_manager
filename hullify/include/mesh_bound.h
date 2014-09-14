@@ -58,7 +58,9 @@ class MeshBound {
 		void construct_planes();
 
 		pcl::ModelCoefficients get_plane1();
+		Eigen::Vector3d get_plane1_normal();
 		pcl::ModelCoefficients get_plane2();
+		Eigen::Vector3d get_plane2_normal();
 		Eigen::Vector3d get_centroid();
 		Eigen::Vector3d get_camera_normal_vec();
 		Eigen::Vector3d get_horiz_normal();

@@ -1,12 +1,16 @@
 import random
+from openravepy.interfaces import TaskManipulation
 from numpy import array
+from numpy import linspace
 import math
 
 def generate_grasp_params(gmodel, mesh_and_bounds_msg):
 	params = get_params(gmodel)
 
 	filtered_ray_idxs = filter_approach_rays(params['approachrays'], mesh_and_bounds_msg)
-	#params['rolls'] = limit_wrist_rolling()
+	params['rolls'] = limit_wrist_rolling()
+	params['preshapes'] = set_preshape(gmodel)
+	params['manipulatordirections'] = set_manip_approach_direction(gmodel)
 	#params['approachrays'] = gmodel.computeBoxApproachRays()
 	#print dir(params['approachrays'])
 	#print "__doc__: ", params['approachrays'].__doc__
@@ -104,13 +108,25 @@ def get_plane_dist(pt, plane_coefficient_list):
 	dist = (dot + plane_coefficient_list[3]) / norm_len
 	return dist
 
-
+#This is the number of wrist rolls to attempt around a given approach vector
+#	??What is this relative to? Current position?
 def limit_wrist_rolling():
-	wrist_orientations = []
-	cur_angle = -math.pi / 2
-	angle_step = math.pi / 4
-	for i in range(0, 5):
-		wrist_orientations.append(cur_angle)
-		cur_angle += angle_step
-
+	wrist_orientations = linspace(-math.pi / 2, math.pi / 2, num=5)
+	print "wrist orientations: ", wrist_orientations
 	return wrist_orientations
+
+#Get an initial state for the fingers.
+#	For the robotiq hand, this can be all zeros.
+def set_preshape(gmodel):
+	with gmodel.target:
+		gmodel.target.Enable(False)
+		taskmanip = TaskManipulation(gmodel.robot)
+		final_joints, traj = taskmanip.ReleaseFingers(execute=False, outputfinal=True)
+	#final_joints[-1] = 0.5
+	print "Setting preshape of grasp to: ", final_joints
+	return array([final_joints])
+
+def set_manip_approach_direction(gmodel):
+	manip_dirs = array([gmodel.manip.GetDirection()])
+	print "manip_dirs: ", manip_dirs
+	return manip_dirs

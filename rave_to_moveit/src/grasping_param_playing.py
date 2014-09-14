@@ -33,10 +33,10 @@ loaded_hands = {"l_robotiq":['robots/robotiq.dae', '']}
 def set_openrave_environment_vars():
 	rospack = rospkg.RosPack()
 	rave_to_moveit_path = rospack.get_path('rave_to_moveit')
-	if os.environ.get("OPENRAVE_DATA", "") != "":
-		os.environ["OPENRAVE_DATA"] = rave_to_moveit_path + os.environ["OPENRAVE_DATA"]
-	else:
-		os.environ["OPENRAVE_DATA"] = rave_to_moveit_path
+	#if os.environ.get("OPENRAVE_DATA", "") != "":
+	#	os.environ["OPENRAVE_DATA"] = rave_to_moveit_path + os.environ["OPENRAVE_DATA"]
+	#else:
+	os.environ["OPENRAVE_DATA"] = rave_to_moveit_path
 
 	#print "set env vars"
 
@@ -45,9 +45,23 @@ def build_environment():
 
 	env = Environment()
 	#load_hands()
+	#env.Load('scenes/grasp_target.env.xml')
 	env.Load('scenes/test2.env.xml')
 	
 	env.SetViewer('qtcoin')
+
+def load_hands():
+	global env
+	global loaded_hands
+
+	for hand_name in loaded_hands:
+		robot = env.ReadRobotXMLFile(loaded_hands[hand_name][FILE_PATH])
+		if robot is None:
+			print "Cannot load robot: ", loaded_hands[hand_name][FILE_PATH]
+		else:
+			env.AddRobot(robot)
+			loaded_hands[hand_name][ENV_NAME] = robot.GetName()
+			print "Loaded ", loaded_hands[hand_name][ENV_NAME]
 
 def main(mesh_and_bounds_msg): 
 	#If there was a previous object, delete it:
@@ -57,8 +71,11 @@ def main(mesh_and_bounds_msg):
 
 	print "robots: ", env.GetRobots()
 	robot = env.GetRobots()[0]
+
+	#robot.SetActiveDOFs(range(7, 16))
+	#robot = env.GetRobot(loaded_hands[cur_hand][ENV_NAME])
 	manipulator = robot.GetManipulators()[0]
-	#print "manipulator: ", dir(manipulator)
+	#robot.SetActiveDOFs(manipulator.GetGripperIndices(),DOFAffine.X+DOFAffine.Y+DOFAffine.Z)
 	#print "direction: ", manipulator.GetDirection()
 	#print "closing direction: ", manipulator.GetChuckingDirection()
 	#print "palm direction: ", manipulator.GetPalmDirection()
@@ -74,18 +91,12 @@ def main(mesh_and_bounds_msg):
 	if not gmodel.load():
 		fgmodel =  fastgraspingthreaded.FastGraspingThreaded(robot, target)
 		params = plane_filters.generate_grasp_params(gmodel, mesh_and_bounds_msg)
-		params['numthreads'] = 3
-		params['maxgrasps'] = 20
-		del(params['plannername'])
-		del(params['finestep'])
-		del(params['forceclosure'])
-		del(params['checkgraspfn'])
-		#params['rolls'] = None
+		#params = set_params_for_threaded_call(params, target)
 
-		num_grasps, grasps = fgmodel.callGraspThreaded(**params)
-		#gmodel.generate(**params)
+		#num_grasps, grasps = fgmodel.callGraspThreaded(**params)
+		gmodel.generate(**params)
 	
-	gmodel.grasps = grasps
+	#gmodel.grasps = grasps
 	show_grasps(gmodel)
 	
 	#print "grasps: ", gmodel.grasps
@@ -120,6 +131,22 @@ def show_grasps(gmodel):
 	for grasp in gmodel.grasps:
 		gmodel.showgrasp(grasp)
 		#lol = raw_input("Pausing to observe grasp... Enter any key to continue")
+
+def set_params_for_threaded_call(params, target):
+	params['numthreads'] = 8 
+	params['maxgrasps'] = 20
+	del(params['plannername'])
+	del(params['finestep'])
+	del(params['forceclosure'])
+	del(params['checkgraspfn'])
+	params['forceclosurethreshold'] = 0.001
+	params['graspingnoise'] = 0
+	params['ngraspingnoiseretries'] = 0
+	params['checkik'] = False #FOR NOW!
+	params['target'] = target
+
+	return params
+
 
 def mk_fake_openrave_params_msg():
 	msg = Mesh_and_bounds()

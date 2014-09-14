@@ -507,6 +507,11 @@ pcl::ModelCoefficients MeshBound::get_plane1()
 
 }
 
+Eigen::Vector3d MeshBound::get_plane1_normal()
+{
+	return Eigen::Vector3d(plane1.values[0], plane1.values[1], plane1.values[2]);
+}
+
 //Returns a copy of plane 1 if plane2 is non-existant.
 pcl::ModelCoefficients MeshBound::get_plane2()
 {
@@ -528,6 +533,11 @@ pcl::ModelCoefficients MeshBound::get_plane2()
 
 	return out_plane;
 
+}
+
+Eigen::Vector3d MeshBound::get_plane2_normal()
+{
+	return Eigen::Vector3d(plane2.values[0], plane2.values[1], plane2.values[2]);
 }
 
 //Returns a copy of the centroid for local use.

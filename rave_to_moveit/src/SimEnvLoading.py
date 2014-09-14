@@ -179,7 +179,7 @@ def replace_target(convex_hull):
 	#print dir(new_mesh)
 	grasp_target = env.GetKinBody('grasp_target')
 	env.RemoveKinBody(grasp_target)
-	grasp_target.InitFromTrimesh(new_mesh)
+	grasp_target.InitFromTrimesh(new_mesh, True)
 	env.AddKinBody(grasp_target)
 
 	#lol = raw_input("Pausing...")
