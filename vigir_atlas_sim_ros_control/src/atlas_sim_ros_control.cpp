@@ -36,6 +36,11 @@
  *
  *********************************************************************/
 
+/**
+ * Based on "Sending joint commands with ROS" tutorial at
+ * http://gazebosim.org/tutorials?tut=drcsim_ros_cmds&cat=drcsim
+ */
+
 #include <vigir_atlas_sim_ros_control/atlas_sim_ros_control.h>
 
 #include <controller_manager/controller_manager.h>
