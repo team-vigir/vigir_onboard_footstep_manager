@@ -68,6 +68,7 @@ class MeshBound {
 		void publish_centroid();
 		void publish_plane1();
 		void publish_plane2();
+		geometry_msgs::PolygonStamped mk_plane_msg(pcl::ModelCoefficients::Ptr plane);
 		
 	private:
 		void constructor_common();
@@ -91,7 +92,7 @@ class MeshBound {
 		void handle_ptcloud_errors();		
 
 		void publish_proj_pts(pcl::PointCloud<pcl::PointXYZ>::Ptr proj_pts);
-		geometry_msgs::PolygonStamped mk_plane_msg(pcl::ModelCoefficients::Ptr plane);
+
 
 		ros::NodeHandle n;
 		string fixed_frame;

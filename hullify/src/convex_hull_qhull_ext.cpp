@@ -4,6 +4,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/Point.h>
 #include <hullify/Mesh_and_bounds.h>
+#include <std_msgs/String.h>
 
 #include "pcl/ros/conversions.h"
 #include <pcl_conversions/pcl_conversions.h>
@@ -47,6 +48,7 @@ class MeshMaker{
 		MeshMaker();
 		~MeshMaker();
 		void listen();
+		void begin(const std_msgs::String::ConstPtr& msg);
 
 	private:
 		void init_reference_frame();
@@ -61,9 +63,10 @@ class MeshMaker{
 		Eigen::Matrix3d get_principal_axes(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
 		void send_hull_and_planes_to_openrave(string& mesh_full_abs_path, pcl::PolygonMesh::Ptr convex_hull);
 		bool are_planes_obtuse(const Eigen::Vector3d& n1, const Eigen::Vector3d& n2);
-		void set_bounding_planes(hullify::Mesh_and_bounds& openrave_msg)
-		void record_planes(hullify::Mesh_and_bounds& msg, Eigen::Vector3d& know_p_proper, Eigen::Vector3d& know_p_improper, Eigen::Vector3d& ninety_normal, Eigen::Vector3d& zero_normal)
-		void set_openrave_msg_planes(hullify::Mesh_and_bounds& msg, Eigen::Vector3d strict_vec1, Eigen::Vector3d strict_vec2, Eigen::Vector3d relaxed_vec1, Eigen::Vector3d relaxed_vec2)
+		void set_bounding_planes(hullify::Mesh_and_bounds& openrave_msg);
+		Eigen::Vector3d get_zero_degree_normal(Eigen::Vector3d& horiz_normal, Eigen::Vector3d& camera_to_centroid);
+		//void record_planes(hullify::Mesh_and_bounds& msg, Eigen::Vector3d& know_p_proper, Eigen::Vector3d& know_p_improper, Eigen::Vector3d& ninety_normal, Eigen::Vector3d& zero_normal);
+		//void set_openrave_msg_planes(hullify::Mesh_and_bounds& msg, Eigen::Vector3d strict_vec1, Eigen::Vector3d strict_vec2, Eigen::Vector3d relaxed_vec1, Eigen::Vector3d relaxed_vec2);
 		void mk_mesh_msg(shape_msgs::Mesh& msg, pcl::PolygonMesh::Ptr convex_hull);
 		
 		ros::NodeHandle n;
@@ -135,7 +138,7 @@ MeshMaker::MeshMaker()
 	init_mesh_name();
 
 	//Initialize subscriber and begin waiting
-	//grasp_pipeline_trigger = n.subscribe(ALBERTOS_TRIGGER_TOPIC_NAME_GOES_HERE, 1, &MeshMaker::begin, this);
+	grasp_pipeline_trigger = n.subscribe("osu_grasping_trigger", 1, &MeshMaker::begin, this);
 	cloud_input.resize(in_topic_name.size());
 	for (unsigned int i = 0; i < in_topic_name.size(); ++i){
 		cloud_input[i] = n.subscribe(in_topic_name[i], 1, &MeshMaker::convert_cloud, this);
@@ -146,6 +149,7 @@ MeshMaker::MeshMaker()
 	visualization_msgs::Marker marker_type;
 	geometry_msgs::PoseStamped pose_type;
 	hullify::Mesh_and_bounds openrave_type;
+	geometry_msgs::PolygonStamped polygon_type;
 	view->add_mesh_topic(mesh_base_name);
 	view->add_topic_no_queue("principal_axis", marker_type);
 	view->add_topic_no_queue("end_effector_with_offset", marker_type);
@@ -154,6 +158,8 @@ MeshMaker::MeshMaker()
 	view->add_topic_no_queue("openrave_params", openrave_type);
 	view->add_topic_no_queue("v1_in_plane", marker_type);
 	view->add_topic_no_queue("v2_in_plane", marker_type);
+	view->add_topic_no_queue("zero_degree_normal", marker_type);
+	view->add_topic_no_queue("ninety_degree_plane", polygon_type);
 }
 
 void MeshMaker::init_reference_frame()
@@ -257,7 +263,7 @@ void MeshMaker::listen()
 
 }
 
-/*void MeshMaker::begin(const std_msgs::String::ConstPtr& msg)
+void MeshMaker::begin(const std_msgs::String::ConstPtr& msg)
 {
 	cout << "Trigger received." << endl;
 	if (msg->data == "L" || msg->data == "l"){
@@ -265,11 +271,13 @@ void MeshMaker::listen()
 		using_left_hand = true;
 	} else {
 		cout << "Using right side for grasping." << endl;
-		using_right_hand = false;
+		using_left_hand = false;
 	}
-	convert_cloud();
+	
+	//convert_cloud();
 }
 
+/*
 void MeshMaker::accept_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
 
@@ -441,10 +449,6 @@ void MeshMaker::send_hull_and_planes_to_openrave(string& mesh_full_abs_path, pcl
 	openrave_msg.full_abs_mesh_path = mesh_full_abs_path;
 	mk_mesh_msg(openrave_msg.convex_hull, convex_hull);
 	set_bounding_planes(openrave_msg);
-	//openrave_msg.bounding_planes[0] = view->mk_shape_plane(bounds->get_plane1());
-	//openrave_msg.bounding_planes[1] = view->mk_shape_plane(bounds->get_plane2());
-
-	//openrave_msg.plane_sep_angle_gt_pi = are_planes_obtuse();
 
 	view->publish("openrave_params", openrave_msg);
 }
@@ -453,29 +457,44 @@ void MeshMaker::set_bounding_planes(hullify::Mesh_and_bounds& openrave_msg)
 {
 	Eigen::Vector3d p1_normal = bounds->get_plane1_normal();
 	Eigen::Vector3d p2_normal = bounds->get_plane2_normal();
-	Eigen::Vector3d camera_to_cenrtoid = bounds->get_camera_normal();
+	Eigen::Vector3d camera_to_centroid = bounds->get_camera_normal_vec();
+	Eigen::Vector3d centroid = bounds->get_centroid();
 	Eigen::Vector3d horiz_normal = bounds->get_horiz_normal();
 
-	Eigen::Vector3d zero_degree_plane_normal;
-	if (using_left_hand){
-		zero_degree_plane_normal = horiz_normal.cross(camera_to_centroid);
-	} else {
-		zero_degree_plane_normal = -horiz_normal.cross(camera_to_centroid);
-	}
+	Eigen::Vector3d zero_degree_plane_normal = get_zero_degree_normal(horiz_normal, camera_to_centroid);
 
 	Eigen::Vector3d ninety_degree_plane_normal = -camera_to_centroid;
 
-	if (get_angle_mag_between(-camera_to_centroid, p1_normal) > (M_PI / 2)){
+	/*if (get_angle_mag_between(-camera_to_centroid, p1_normal) > (M_PI / 2)){
 		//p2 is in the proper side
 		record_planes(msg, p2_normal, p1_normal, ninety_degree_plane_normal, zero_degree_plane_normal);
 
 	} else {
 		//p1 is in the proper side
 		record_planes(msg, p1_normal, p2_normal, ninety_degree_plane_normal, zero_degree_plane_normal);
-	}
+	}*/
+
+	view->publish("zero_degree_normal", view->mk_vector_msg(zero_degree_plane_normal));
+	view->publish("ninety_degree_plane", bounds->mk_plane_msg(mk_plane(centroid, ninety_degree_plane_normal)));
+	openrave_msg.ninety_degree_bounding_planes[0] = view->mk_shape_plane(*mk_plane(centroid, ninety_degree_plane_normal));
+	openrave_msg.ninety_degree_bounding_planes[1] = view->mk_shape_plane(*mk_plane(centroid, zero_degree_plane_normal));
+	openrave_msg.knowledge_bounding_planes[0] = view->mk_shape_plane(bounds->get_plane1());
+	openrave_msg.knowledge_bounding_planes[1] = view->mk_shape_plane(bounds->get_plane2());
+	openrave_msg.plane_sep_angle_gt_pi = are_planes_obtuse(p1_normal, p2_normal);
 }
 
-void MeshMaker::record_planes(hullify::Mesh_and_bounds& msg, Eigen::Vector3d& know_p_proper, Eigen::Vector3d& know_p_improper, Eigen::Vector3d& ninety_normal, Eigen::Vector3d& zero_normal)
+Eigen::Vector3d MeshMaker::get_zero_degree_normal(Eigen::Vector3d& horiz_normal, Eigen::Vector3d& camera_to_centroid)
+{
+	if (using_left_hand){
+		return horiz_normal.cross(camera_to_centroid);
+	}
+
+	return -horiz_normal.cross(camera_to_centroid);
+
+}
+
+
+/*void MeshMaker::record_planes(hullify::Mesh_and_bounds& msg, Eigen::Vector3d& know_p_proper, Eigen::Vector3d& know_p_improper, Eigen::Vector3d& ninety_normal, Eigen::Vector3d& zero_normal)
 {
 	if (get_angle_mag_between(zero_normal, know_p_proper) > (M_PI / 2)){
 		set_openrave_msg_planes(msg, know_p_proper, zero_normal, ninety_normal, know_p_improper);			
@@ -489,11 +508,11 @@ void MeshMaker::record_planes(hullify::Mesh_and_bounds& msg, Eigen::Vector3d& kn
 void MeshMaker::set_openrave_msg_planes(hullify::Mesh_and_bounds& msg, Eigen::Vector3d strict_vec1, Eigen::Vector3d strict_vec2, Eigen::Vector3d relaxed_vec1, Eigen::Vector3d relaxed_vec2)
 {
 	Eigen::Vector3d centroid = bounds->get_centroid();
-	msg.stringent_bounding_planes[0] = mk_plane_msg(mk_plane(centroid. strict_vec1));
-	msg.stringent_bounding_planes[1] = mk_plane_msg(mk_plane(centroid, strict_vec2));
-	msg.relaxed_bounding_planes[0] = mk_plane_msg(mk_plane(centroid, relaxed_vec1));
-	msg.relaxed_bounding_planes[1] = mk_plane_msg(mk_plane(centroid, relaxed_vec2));
-}
+	msg.stringent_bounding_planes[0] = view->mk_shape_plane(mk_plane(centroid. strict_vec1));
+	msg.stringent_bounding_planes[1] = view->mk_shape_plane(mk_plane(centroid, strict_vec2));
+	msg.relaxed_bounding_planes[0] = view->mk_shape_plane(mk_plane(centroid, relaxed_vec1));
+	msg.relaxed_bounding_planes[1] = view->mk_shape_plane(mk_plane(centroid, relaxed_vec2));
+}*/
 
 bool MeshMaker::are_planes_obtuse(const Eigen::Vector3d& n1, const Eigen::Vector3d& n2)
 {
