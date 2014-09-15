@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 import rospy
 from openravepy import *
+from openravepy.examples import tutorial_grasptransform
 import rospkg
 import os
 import numpy, time
-from openravepy import ikfast
 from std_msgs.msg import String
 from geometry_msgs.msg import PoseArray
 from hullify.msg import Mesh_and_bounds
 
 import geometry_msgs
+import tf
 from tf import transformations as tr
 import tf_conversions.posemath as pm
 from numpy import pi, eye, dot, cross, linalg, sqrt, ceil, size
@@ -17,12 +18,16 @@ from numpy import hstack, vstack, mat, array, arange, fabs, zeros
 import math
 
 import plane_filters
+import atlas_and_ik
 
 env = None
+gt = None
 obj_name = ""
 cur_hand = "l_robotiq"
 grasp_target = 'grasp_target'
 arm_type = "L"
+robot = None
+tf_listener = None
 
 #Environment var name->[file_name, name_in_system]
 FILE_PATH = 0
@@ -41,14 +46,21 @@ def set_openrave_environment_vars():
 
 def build_environment():
 	global env
+	global gt
+	global robot
 
 	env = Environment()
 	#load_hands()
-	env.Load('scenes/test2.env.xml')
+	#env.Load('scenes/test2.env.xml')
+	load_atlas()
+	env.Load('scenes/grasp_target.env.xml')
 	#env.Load('adeptsetup.robot.xml')
 
 	env.SetViewer('qtcoin')
-	raw_input("pausing...")
+	gt = GraspTransform(env,target)
+	gt.drawTransform(robot.GetTransform())
+	gt.drawTransform(robot.GetActiveManipulator().GetEndEffector.GetTransform())
+	print "Drew robot transform frame"
 
 def load_hands():
 	global env
@@ -63,6 +75,21 @@ def load_hands():
 			loaded_hands[hand_name][ENV_NAME] = robot.GetName()
 			print "Loaded ", loaded_hands[hand_name][ENV_NAME]
 
+def load_atlas():
+	global env
+	global robot
+	#env.Load('robots/atlas/flor_atlas.dae')
+	env.Load('robots/atlas_setup.robot.xml')
+	atlas = env.GetRobot('atlas')
+	
+	if atlas is not None:
+		robot = atlas
+	else:
+		print "Atlas is None in load_atlas(). Load failed."
+		exit()
+
+	set_atlas_manipulators(atlas)
+
 #The main function grabs the environment you want, setting the robot as the first
 #robot tag put into your env file. Then it sets up the ikfast, the target for the robot
 #and the database grasps are store in. Then send to the TransformToPose function
@@ -71,19 +98,19 @@ def main(mesh_and_bounds_msg):
 	global env
 	global obj_name
 	global grasp_target
-
+	global robot
+	global ikmodel
 	#remove_prev_object()
 	#obj_name = load_new_object(mesh_and_bounds_msg.full_abs_mesh_path)
 	#print "obj_name (grasp_target): ", obj_name
 	
 	#grasp_target = raw_input("Please enter name of object you want to grasp: ")
 
-	print "robots: ", env.GetRobots()
-	robot = env.GetRobots()[0]
+	#print "robots: ", env.GetRobots()
+	#robot = env.GetRobots()[0]
 	#robot = env.GetRobot(loaded_hands[cur_hand][ENV_NAME])
-	ikmodel = databases.inversekinematics.InverseKinematicsModel(robot,iktype=IkParameterizationType.Transform6D)
-	if not ikmodel.load():
-		ikmodel.autogenerate()
+
+
 	target = env.GetKinBody(grasp_target)
 	print "Got target!"
 
@@ -221,7 +248,24 @@ def publish_poses(pose_array, mesh_ref_frame):
 	
 	pub.publish(pose_msg)
 
+def change_pose_ref_frame(pose_array, mesh_ref_frame):
+	global fixed_ref_frame
+	global tf_listener
+	if fixed_ref_frame != mesh_ref_frame:
+		while not rospy.is_shutdown():
+			try:
+				(trans, rot) = tf_listener.lookupTransform("/" + mesh_ref_frame, "/" + fixed_frame_ref, rospy.Time(0))
+				break
+			except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+				continue
+		for pose in pose_array:
+			#transform it...
+			print "transforming poses is still required."
+			
+
 if __name__ == '__main__':
+	global tf_listener
+	tf_listener = tf.TransformListener()
 	rospy.init_node('SimEnvLoading', anonymous=True)
 	set_openrave_environment_vars()
 	build_environment()

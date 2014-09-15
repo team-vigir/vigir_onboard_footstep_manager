@@ -1,0 +1,5 @@
+for atlas_setup.robot.xml
+openravepy.databases.inversekinematics: testik, success rate: 0.996780, wrong solutions: 0.000000, no solutions: 0.003220, missing solution: 0.099500
+
+perftiming: openravepy.databases.inversekinematics: RunFromParser, running time mean: 0.000443s, median: 0.000434s, min: 0.000292s, max: 0.000795s
+
