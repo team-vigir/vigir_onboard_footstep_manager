@@ -1,7 +1,7 @@
 <Robot name = "atlas" File = 'flor_atlas.dae'>
 	<Manipulator name = 'l_arm'>
 		<base>utorso</base>
-		<effector>l_hand</effector>
+		<effector>left_palm</effector>
 		<joints>
 			 left_f0_j1 
 			 left_f0_j2 
@@ -18,6 +18,6 @@
 			 left_f2_j3 
 		</joints>
 		<closingdirection>1 1 1 1 1 1 1 1 1 1 1</closingdirection> <!--of the finger joints-->
-		<direction>0 0 1</direction>
+		<direction>0 1 0</direction>
 	</Manipulator>
 </Robot>

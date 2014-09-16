@@ -7,3 +7,7 @@ Record the number of rolls that were disregarded and which ones. Compile statist
 Make the whole darn thing OOP with some class variables instead of globals
 
 Make grasp into a position for ee, an approach and a roll. Use that just before evaluating the grasp unless it's expensive to do so.
+
+Set the palm facing direction to the manipulator's direction in the approach IK.
+
+Dynamically determine the distance from the palm's origin to its face...

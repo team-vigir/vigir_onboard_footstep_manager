@@ -5,22 +5,24 @@ import openravepy
 from numpy import pi, eye, dot, cross, linalg, sqrt, ceil, size
 from numpy import hstack, vstack, mat, array, arange, fabs, zeros
 
+import math
+
 ikmodel = None
 
-def load_atlas():
-	global env
-	global robot
+def load_atlas(env):
 	#env.Load('robots/atlas/flor_atlas.dae')
-	env.Load('robots/atlas_setup.robot.xml')
+	env.Load('robots/atlas/atlas_setup.robot.xml')
 	atlas = env.GetRobot('atlas')
 	
 	if atlas is not None:
-		robot = atlas
+		print "Load successful."
 	else:
 		print "Atlas is None in load_atlas(). Load failed."
 		exit()
 
 	set_atlas_manipulators(atlas)
+
+	return atlas
 
 def set_atlas_manipulators(atlas):
 	base_manip_info = atlas.ManipulatorInfo()
@@ -84,18 +86,42 @@ def filter_approach_rays_using_ik(approach_rays, rolls):
 	return out_rays
 
 def get_transform_for_approach(ray, rolls):
-	approach_dir_vec = ray[3:6]
+	approach_dir_vec = -ray[3:6]
 	palm_direction = [0, 1, 0]
-	roll_around_direction = [1, 0, 0]
 	world_quat = [1, 0, 0, 0]
 	roll_quats = []
+	palm_center_to_face_dist = 0.03 #meters
 
 	quat_orient_approach = quatRotateDirection(palm_direction, approach_dir_vec)
 	for roll in rolls:
-		roll_quats.append(quatFromAxisAngle(roll_around_direction, roll))
+		roll_quats.append(quatFromAxisAngle(approach_dir_vec, roll))
+	
+	ray[0:3] = offset_from_center_of_palm(ray[0:3], approach_dir_vec, palm_center_to_face_dist)
 
-	final_quat = quatMult(rolls_quats[0], quatMult(world_quat, quat_orient_approach))
- 	transform = matrixFromPose(final_quat.extend(ray[0:3]))
+	final_quat = quatMult(roll_quats[0], quatMult(world_quat, quat_orient_approach))
+	final_pose = [final_quat[0], final_quat[1], final_quat[2], final_quat[3], ray[0], ray[1], ray[2]]
+	print "final_pose: ", final_pose	
+	transform = matrixFromPose(final_pose)
 
 	return transform
-	
+
+def offset_from_center_of_palm(initial_pos, approach_dir, dist):
+	mult_fact = dist * ((approach_dir[0]**2 + approach_dir[1]**2 + approach_dir[2]**2) ** 0.5)
+	offset = [a * mult_fact for a in approach_dir]
+	return [p - q for p, q in zip(initial_pos, offset)]
+
+def test_transforms(gt):
+	rays = [[1, 0, 0, 0, 0, 1],
+		[1, 0, 0, 1, 0, 0],
+		[0.3, 0.2, 1, 0, 1, 1]]
+	rolls = [math.pi / 2]
+
+	for ray in rays:
+		transform = get_transform_for_approach(ray, rolls)
+		a1 = gt.drawTransform(transform)
+		raw_input("Drew new transform frame. Pausing before leaving scope...")
+
+def visualize_approaches(gt, params):
+	for ray in params['approachrays']:		
+		a1 = gt.drawTransform(get_transform_for_approach(ray, [math.pi/2]))
+		raw_input("How's the transform?")

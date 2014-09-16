@@ -7,7 +7,7 @@ import math
 def generate_grasp_params(gmodel, mesh_and_bounds_msg):
 	params = get_params(gmodel)
 
-	filtered_ray_idxs = filter_approach_rays(params['approachrays'], mesh_and_bounds_msg)
+	filtered_ray_idxs = filter_approach_rays(params['approachrays'], mesh_and_bounds_msg, num_return_rays=1)
 	params['rolls'] = limit_wrist_rolling()
 	params['preshapes'] = set_preshape(gmodel)
 	params['manipulatordirections'] = set_manip_approach_direction(gmodel)
@@ -46,7 +46,7 @@ def get_params(gmodel):
 
 	return all_params
 
-def filter_approach_rays(initial_approachrays, bounding_plane_msg):
+def filter_approach_rays(initial_approachrays, bounding_plane_msg, num_return_rays=1):
 	plane1 = bounding_plane_msg.ninety_degree_bounding_planes[0].coef
 	plane2 = bounding_plane_msg.ninety_degree_bounding_planes[1].coef
 	planes_are_obtuse = bounding_plane_msg.plane_sep_angle_gt_pi
@@ -54,7 +54,6 @@ def filter_approach_rays(initial_approachrays, bounding_plane_msg):
 	#The ninety degree planes will never be obtuse
 	cur_ray_idxs = filter_bounding_planes(initial_approachrays, plane1, plane2, False)
 
-	num_return_rays = 10
 	cur_ray_idxs = random_ray_selection(cur_ray_idxs, num_return_rays)
 
 	return cur_ray_idxs
@@ -79,6 +78,9 @@ def filter_bounding_planes(initial_approach_rays, bplane1, bplane2, planes_are_o
 	return out_ray_idxs
 
 def random_ray_selection(ray_idxs, num_return_rays):
+	if num_return_rays > len(ray_idxs):
+		print "Insufficient approach ray count: ", len(ray_idxs), " rays available and asked to select ", num_return_rays
+		return ray_idxs
 	return random.sample(ray_idxs, num_return_rays)
 
 # The normal of the planes should point TOWARD THE ROBOT
@@ -113,7 +115,8 @@ def get_plane_dist(pt, plane_coefficient_list):
 #This is the number of wrist rolls to attempt around a given approach vector
 #	??What is this relative to? Current position?
 def limit_wrist_rolling():
-	wrist_orientations = linspace(-math.pi / 2, math.pi / 2, num=5)
+	#wrist_orientations = linspace(-math.pi / 2, math.pi / 2, num=3)
+	wrist_orientations = linspace(math.pi/2, math.pi/2, num=1)
 	print "wrist orientations: ", wrist_orientations
 	return wrist_orientations
 

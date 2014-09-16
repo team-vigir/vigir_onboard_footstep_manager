@@ -17,6 +17,7 @@ from numpy import pi, eye, dot, cross, linalg, sqrt, ceil, size
 from numpy import hstack, vstack, mat, array, arange, fabs, zeros
 import math
 
+import grasping
 import plane_filters
 import atlas_and_ik
 
@@ -27,7 +28,7 @@ cur_hand = "l_robotiq"
 grasp_target = 'grasp_target'
 arm_type = "L"
 robot = None
-tf_listener = None
+pelvis_listener = None
 
 #Environment var name->[file_name, name_in_system]
 FILE_PATH = 0
@@ -52,15 +53,18 @@ def build_environment():
 	env = Environment()
 	#load_hands()
 	#env.Load('scenes/test2.env.xml')
-	load_atlas()
+	robot = atlas_and_ik.load_atlas(env)
 	env.Load('scenes/grasp_target.env.xml')
+	target = env.GetKinBody('grasp_target')
 	#env.Load('adeptsetup.robot.xml')
 
 	env.SetViewer('qtcoin')
-	gt = GraspTransform(env,target)
-	gt.drawTransform(robot.GetTransform())
-	gt.drawTransform(robot.GetActiveManipulator().GetEndEffector.GetTransform())
-	print "Drew robot transform frame"
+	gt = tutorial_grasptransform.GraspTransform(env,target)
+	a1 =  gt.drawTransform(robot.GetTransform(), length=1)
+	a2 = gt.drawTransform(robot.GetActiveManipulator().GetEndEffector().GetTransform(), length=1)
+	raw_input("Drew robot transform frame. Pausing before leaving scope...")
+	#atlas_and_ik.test_transforms(gt)
+	
 
 def load_hands():
 	global env
@@ -75,21 +79,6 @@ def load_hands():
 			loaded_hands[hand_name][ENV_NAME] = robot.GetName()
 			print "Loaded ", loaded_hands[hand_name][ENV_NAME]
 
-def load_atlas():
-	global env
-	global robot
-	#env.Load('robots/atlas/flor_atlas.dae')
-	env.Load('robots/atlas_setup.robot.xml')
-	atlas = env.GetRobot('atlas')
-	
-	if atlas is not None:
-		robot = atlas
-	else:
-		print "Atlas is None in load_atlas(). Load failed."
-		exit()
-
-	set_atlas_manipulators(atlas)
-
 #The main function grabs the environment you want, setting the robot as the first
 #robot tag put into your env file. Then it sets up the ikfast, the target for the robot
 #and the database grasps are store in. Then send to the TransformToPose function
@@ -100,26 +89,17 @@ def main(mesh_and_bounds_msg):
 	global grasp_target
 	global robot
 	global ikmodel
-	#remove_prev_object()
-	#obj_name = load_new_object(mesh_and_bounds_msg.full_abs_mesh_path)
-	#print "obj_name (grasp_target): ", obj_name
+	global gt
 	
-	#grasp_target = raw_input("Please enter name of object you want to grasp: ")
-
-	#print "robots: ", env.GetRobots()
-	#robot = env.GetRobots()[0]
-	#robot = env.GetRobot(loaded_hands[cur_hand][ENV_NAME])
-
-
 	target = env.GetKinBody(grasp_target)
 	print "Got target!"
 
-	gmodel = databases.grasping.GraspingModel(robot,target)
+	gmodel = grasping.GraspingModel(robot,target)
 	#print dir(gmodel.grasper)
 	#print gmodel.grasper.__class__
-	#lol = input ("Pausing... Please input: ")
 	if not gmodel.load():
 		params = plane_filters.generate_grasp_params(gmodel, mesh_and_bounds_msg)
+		atlas_and_ik.visualize_approaches(gt, params)
 		gmodel.generate(**params)
 
 	
@@ -264,9 +244,9 @@ def change_pose_ref_frame(pose_array, mesh_ref_frame):
 			
 
 if __name__ == '__main__':
-	global tf_listener
-	tf_listener = tf.TransformListener()
+	global pelvis_listener
 	rospy.init_node('SimEnvLoading', anonymous=True)
+	pelvis_listener = tf.TransformListener()
 	set_openrave_environment_vars()
 	build_environment()
 	#main('lol')
