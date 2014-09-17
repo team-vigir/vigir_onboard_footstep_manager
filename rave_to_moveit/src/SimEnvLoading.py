@@ -128,22 +128,22 @@ class VigirGrasper:
 		#gmodel = grasping.GraspingModel(robot,target)
 		params = plane_filters.generate_grasp_params(self.gmodel, mesh_and_bounds_msg)
 		self.totalgrasps = self.get_grasps(mesh_and_bounds_msg, params, gt, returnnum=15)
-	
+		
+		if len(self.totalgrasps) == 0:
+			print "No suitable grasps found. Please select another pointcloud."
+			return
+
 		print len(self.totalgrasps), " Grasps available."
 		self.show_grasps(self.totalgrasps)
+		graspnum = "lol"
+		while int(graspnum) is false:
+			graspnum = input("Please enter number of valid grasps to return: ")
 		
-		graspnum = input("Please enter number of valid grasps to return: ")
-		#validgrasps, validindices = self.gmodel.computeValidGrasps(returnnum=graspnum)
-		#print "validgrasps: ", validgrasps
-		#print "validindices: ", validindices
-		#basemanip = interfaces.BaseManipulation(robot)
 		pose_array = []
 		with robot:
 			x = 0
-			#req_idxs = range(0, graspnum)
 			while (x < graspnum) and x < len(self.totalgrasps):
 				grasp = self.totalgrasps[x]
-				#gmodel.setPreshape(grasp)
 				T = self.gmodel.getGlobalGraspTransform(grasp,collisionfree=True)
 				p = raveio.TransformToPoseStamped(T)
 				pose_array.append(p)
@@ -153,6 +153,7 @@ class VigirGrasper:
 			print "pose_array: ", pose_array
 
 		self.raveio.publish_poses(pose_array)
+		self.show_ik_on_request()
 
 	def get_grasps(self, mesh_and_bounds_msg, params, gt, returnnum=5):
 		grasps = []
@@ -179,6 +180,12 @@ class VigirGrasper:
 	def show_grasps(self, grasps):
 		for grasp in grasps:
 			self.gmodel.showgrasp(grasp)
+
+	def show_ik_on_request(self):
+		res = raw_input("Input the index of the grasp you would like IK for (q to quit): ")
+		while res != "q" or res != "Q":
+			transform = self.gmodel.getGlobalGraspTransform(self.totalgrasp[res],collisionfree=True)
+			atlas_and_ik.visualize_ik_solution(self.env, transform)
 	
 def partition_rays(mesh_and_bounds_msg, rays):
 	partitioned_rays = []
@@ -194,15 +201,6 @@ def partition_rays(mesh_and_bounds_msg, rays):
 	#print "sweet_shape: ", partitioned_rays[0].shape, " wider_shape: ", partitioned_rays[1].shape
 	#raw_input("How does that partition look?")
 	return partitioned_rays
-
-#def full_info_callback(msg):
-#	print "Got a Mesh_and_bounds_msg!"
-#	print "Plane1: ", msg.ninety_degree_bounding_planes[0]
-#	print "Plane2: ", msg.ninety_degree_bounding_planes[1]
-#	
-#	replace_target(msg.convex_hull)
-#	
-#	main(msg)
 
 def listen_for_LR_hand():
 	return rospy.Subscriber("grasping_hand_selection", String, set_hand_callback)
@@ -230,26 +228,6 @@ def set_hand_callback(msg):
 		print "Please add ", hand_type, " to the loaded_hands dictionary in SimEnvLoading.py"
 	
 
-#def publish_poses(pose_array, mesh_ref_frame):
-#	global pub
-#	pose_array = change_pose_ref_frame(pose_array, mesh_ref_frame)
-#	pose_msg = PoseArray()
-#	pose_msg.poses = pose_array
-#	pose_msg.header.stamp = rospy.Time.now()
-#	pose_msg.header.frame_id = mesh_ref_frame
-#	
-#
-#	pub.publish(pose_msg)
-#
-#def change_pose_ref_frame(pose_array, mesh_ref_frame):
-#	print "Need to test if transforming poses worked properly"
-#	global final_pose_frame
-#	if final_pose_frame != mesh_ref_frame:
-#		for idx, pose in enumerate(pose_array):
-#			pose.header.frame_id = mesh_ref_frame
-#			pose_array[idx] = tr.transformPose(final_pose_frame, pose)
-#
-#	return pose_array
 
 if __name__ == '__main__':
 	rospy.init_node('SimEnvLoading', anonymous=True)
@@ -265,4 +243,6 @@ if __name__ == '__main__':
 	#openraveIO.testpublisher(raveio)
 
 	hand_subscriber = listen_for_LR_hand()
+
+	print "Awaiting hulls..."
 	rospy.spin()

@@ -484,7 +484,11 @@ class GraspingModel(DatabaseGenerator):
             except planning_error, e:
                 print 'Grasp Failed: '
                 print_exc(e)
+
                 return ()
+	    except:
+	    	print "Caught unexpected error while grasping!"
+		return ()
             
             Tlocalgrasp = eye(4)
             with self.robot:

@@ -22,7 +22,7 @@ class openraveIO:
 			self.instances = 1		
 		
 		self.grasper = grasper
-		self.pub = rospy.Publisher('adept_wrist_orientation', PoseArray)
+		self.pub = rospy.Publisher('convex_hull/openrave_grasps', PoseArray)
 		self.meshtopic = rospy.Subscriber("convex_hull/openrave_params", Mesh_and_bounds, self.full_info_callback)		
 		self.pelvis_listener = tf.TransformListener()
 		self.final_pose_ref_frame = final_pose_ref_frame

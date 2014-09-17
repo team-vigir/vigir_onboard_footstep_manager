@@ -29,6 +29,7 @@ def generate_grasp_params(gmodel, mesh_and_bounds_msg):
 	#params['spheredelta'] = 0
 	params['standoffs'] = array([0])
 	params['finestep'] = 0.01
+	params['friction'] = 0.1
 	#params['directiondelta'] = 0
 	#gmodel.numthreads = 3
 
