@@ -191,6 +191,8 @@ except:
 import logging
 log = logging.getLogger('openravepy.'+__name__.split('.',2)[-1])
 
+import atlas_and_ik
+
 class GraspingModel(DatabaseGenerator):
     """Holds all functions/data related to a grasp between a robot hand and a target"""
 
@@ -452,8 +454,10 @@ class GraspingModel(DatabaseGenerator):
         self.grasps = []
 
         def producer():
-            for approachray in approachrays:
+            for idx, approachray in enumerate(approachrays):
                 for roll in rolls:
+		    if not atlas_and_ik.goal_pose_is_reachable(approachray[0:3], -approachray[3:6], roll):
+		    	continue
                     for preshape in preshapes:
                         for standoff in standoffs:
                             for manipulatordirection in manipulatordirections:

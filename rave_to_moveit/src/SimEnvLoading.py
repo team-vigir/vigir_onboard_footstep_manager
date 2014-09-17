@@ -29,6 +29,7 @@ grasp_target = 'grasp_target'
 arm_type = "L"
 robot = None
 pelvis_listener = None
+final_pose_frame = ""
 
 #Environment var name->[file_name, name_in_system]
 FILE_PATH = 0
@@ -79,6 +80,20 @@ def load_hands():
 			loaded_hands[hand_name][ENV_NAME] = robot.GetName()
 			print "Loaded ", loaded_hands[hand_name][ENV_NAME]
 
+def query_final_pose_frame():
+	global final_pose_frame
+	while True:
+		suggestion = raw_input("Please input the reference frame of the final pose: \n\t0 - new \n\t1 - /world: ")
+		if suggestion == "0":
+			final_pose_frame = raw_input("what's your new frame? (please give it a slash prefix")
+		elif suggestion == "1":
+			final_pose_frame = "/world"
+
+		else:
+			continue
+
+		break
+
 #The main function grabs the environment you want, setting the robot as the first
 #robot tag put into your env file. Then it sets up the ikfast, the target for the robot
 #and the database grasps are store in. Then send to the TransformToPose function
@@ -99,33 +114,66 @@ def main(mesh_and_bounds_msg):
 	#print gmodel.grasper.__class__
 	if not gmodel.load():
 		params = plane_filters.generate_grasp_params(gmodel, mesh_and_bounds_msg)
-		atlas_and_ik.visualize_approaches(gt, params)
-		gmodel.generate(**params)
-
+		grasps = get_grasps(gmodel, mesh_and_bounds_msg, params, gt)
+		if len(grasps) < 2:
+			return [geometry_msgs.msg.Pose()]
 	
+	print len(gmodel.grasps), " Grasps available."
 	graspnum = input("Please enter number of valid grasps to return: ")
 	validgrasps, validindices = gmodel.computeValidGrasps(returnnum=graspnum)
 	print "validgrasps: ", validgrasps
 	print "validindices: ", validindices
 	basemanip = interfaces.BaseManipulation(robot)
-	print dir(gmodel)
 	pose_array = []
 	with robot:
-		for x in range (0,graspnum):
+		x = 0
+		req_idxs = range(0, graspnum)
+		while (x < req_idxs) and x < len(validgrasps):
 			grasp = validgrasps[x]
 			gmodel.setPreshape(grasp)
 			T = gmodel.getGlobalGraspTransform(grasp,collisionfree=True)
 			p = TransformToPose(T)
 			pose_array.append(p)
-			traj = basemanip.MoveToHandPosition(matrices=[T],execute=False,outputtrajobj=True)
-			print('Finished Grasp')
-			robot.GetController().SetPath(traj)
-			#robot.WaitForController(0)
+
+			x += 1
 		
-		print pose_array
+		print "pose_array: ", pose_array
 
 	publish_poses(pose_array, mesh_and_bounds_msg.header.frame_id)
-	#raveLogInfo((T))
+
+def get_grasps(gmodel, mesh_and_bounds_msg, params, gt):
+	grasps = []
+	partitioned_rays = partition_rays(mesh_and_bounds_msg, params['approachrays'])
+
+	if sum([len(x) for x in partitioned_rays]) < 1:
+		print "Insufficient approach rays generated. How do the planes look? Returning null pose."
+		return []
+
+	for rays in partitioned_rays:
+		params['approachrays'] = rays
+		#atlas_and_ik.visualize_approaches(gt, params)
+		gmodel.generate(**params)
+
+		grasps.extend(gmodel.grasps)
+		if len(grasps) > 2:
+			return grasps
+
+	return grasps
+	
+def partition_rays(mesh_and_bounds_msg, rays):
+	partitioned_rays = []
+	sweet_idxs = plane_filters.filter_bounding_planes(rays, mesh_and_bounds_msg.ninety_degree_bounding_planes[0].coef, mesh_and_bounds_msg.ninety_degree_bounding_planes[1].coef, False)
+
+	partitioned_rays.append(rays.take(sweet_idxs, axis=0))
+
+	wider_idxs = plane_filters.filter_bounding_planes(rays, mesh_and_bounds_msg.knowledge_bounding_planes[0].coef, mesh_and_bounds_msg.knowledge_bounding_planes[1].coef, mesh_and_bounds_msg.plane_sep_angle_gt_pi)
+	
+	partitioned_rays.append(rays.take([x for x in wider_idxs if x not in sweet_idxs], axis=0))
+
+	print partitioned_rays
+	print "sweet_shape: ", partitioned_rays[0].shape, " wider_shape: ", partitioned_rays[1].shape
+	raw_input("How does that partition look?")
+	return partitioned_rays
 
 def remove_prev_object():
 	if obj_name != '':
@@ -221,6 +269,7 @@ def set_hand_callback(msg):
 
 def publish_poses(pose_array, mesh_ref_frame):
 	pub = rospy.Publisher('adept_wrist_orientation', PoseArray, queue_size=10)
+	pose_array = change_pose_ref_frame(pose_array, mesh_ref_frame)
 	pose_msg = PoseArray()
 	pose_msg.poses = pose_array
 	pose_msg.header.stamp = rospy.Time.now()
@@ -229,25 +278,33 @@ def publish_poses(pose_array, mesh_ref_frame):
 	pub.publish(pose_msg)
 
 def change_pose_ref_frame(pose_array, mesh_ref_frame):
-	global fixed_ref_frame
-	global tf_listener
-	if fixed_ref_frame != mesh_ref_frame:
-		while not rospy.is_shutdown():
-			try:
-				(trans, rot) = tf_listener.lookupTransform("/" + mesh_ref_frame, "/" + fixed_frame_ref, rospy.Time(0))
-				break
-			except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-				continue
-		for pose in pose_array:
-			#transform it...
-			print "transforming poses is still required."
-			
+	print "Need to test if transforming poses worked properly"
+	global final_pose_frame
+	if final_pose_frame != mesh_ref_frame:
+		for idx, pose in enumerate(pose_array):
+			pose.header.frame_id = mesh_ref_frame
+			pose_array[idx] = tr.transformPose(final_pose_frame, pose)
+
+	return pose_array
+
+#def get_pelvis_to_x_transform(mesh_ref_frame):
+#	global fixed_ref_frame
+#	global tf_listener
+#	while not rospy.is_shutdown():
+#		try:
+#			(trans, rot) = tf_listener.lookupTransform("/" + mesh_ref_frame, "/" + fixed_ref_frame, rospy.Time(0))
+#			break
+#		except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+#			continue
+#
+#	return trans, rot
 
 if __name__ == '__main__':
-	global pelvis_listener
 	rospy.init_node('SimEnvLoading', anonymous=True)
+	global pelvis_listener
 	pelvis_listener = tf.TransformListener()
 	set_openrave_environment_vars()
+	query_final_pose_frame()
 	build_environment()
 	#main('lol')
 	hand_subscriber = listen_for_LR_hand()

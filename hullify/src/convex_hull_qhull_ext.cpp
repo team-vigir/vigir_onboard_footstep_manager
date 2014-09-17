@@ -5,8 +5,10 @@
 #include <geometry_msgs/Point.h>
 #include <hullify/Mesh_and_bounds.h>
 #include <std_msgs/String.h>
+#include <tf/transform_listener.h>
 
 #include "pcl/ros/conversions.h"
+#include <pcl_ros/transforms.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_types.h>
 #include <pcl/kdtree/kdtree_flann.h>
@@ -54,8 +56,10 @@ class MeshMaker{
 		void init_reference_frame();
 		void init_input_topic();
 		void init_mesh_name();
+		void init_mesh_ref_frame();
 		pcl::PolygonMesh::Ptr mk_mesh(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
 		void convert_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg);
+		sensor_msgs::PointCloud2 transform_ptcloud(const sensor_msgs::PointCloud2& in_cloud, const string& target_frame);
 		bool get_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg, pcl::PointCloud<pcl::PointXYZ>::Ptr intermediate_cloud);
 		bool is_valid_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
 		geometry_msgs::PoseStamped get_wrist_orientation(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
@@ -68,11 +72,14 @@ class MeshMaker{
 		//void record_planes(hullify::Mesh_and_bounds& msg, Eigen::Vector3d& know_p_proper, Eigen::Vector3d& know_p_improper, Eigen::Vector3d& ninety_normal, Eigen::Vector3d& zero_normal);
 		//void set_openrave_msg_planes(hullify::Mesh_and_bounds& msg, Eigen::Vector3d strict_vec1, Eigen::Vector3d strict_vec2, Eigen::Vector3d relaxed_vec1, Eigen::Vector3d relaxed_vec2);
 		void mk_mesh_msg(shape_msgs::Mesh& msg, pcl::PolygonMesh::Ptr convex_hull);
-		
+		//tf::StampedTransform get_pelvis_transform(string original_frame);
+
 		ros::NodeHandle n;
+		tf::TransformListener listener;
 		ros::Subscriber grasp_pipeline_trigger;
 		vector<ros::Subscriber> cloud_input;
 		string visualization_ref_frame;
+		string mesh_ref_frame;
 		vector<string> in_topic_name;
 		string mesh_base_name;
 		bool using_left_hand;
@@ -123,16 +130,19 @@ pcl::PolygonMesh::Ptr MeshMaker::mk_mesh(pcl::PointCloud<pcl::PointXYZ>::Ptr clo
 
 
 MeshMaker::MeshMaker()
+: listener(n)
 {
 	visualization_ref_frame = "/world";
+	mesh_ref_frame = "/pelvis";
 	using_left_hand = true;
 	//cout << "Hi Jack!" << endl;
 	cout << "Currently, this program has minimal validation. Please input"
 		<< "\n\tvalid filenames and locations when prompted." << endl;
-	
+
+	init_mesh_ref_frame();
 	init_reference_frame();
 	view = new Hullify_View("convex_hull/", &visualization_ref_frame);
-	bounds = new MeshBound(visualization_ref_frame, view);
+	bounds = new MeshBound(mesh_ref_frame, view);
 
 	init_input_topic();
 	init_mesh_name();
@@ -229,6 +239,27 @@ void MeshMaker::init_input_topic()
 	}
 }
 
+void MeshMaker::init_mesh_ref_frame()
+{
+	string input;
+	cout << "Please input the reference frame for output meshes: "
+		<< "\n\t0 - new \n\t1 - /pelvis: ";
+	while(1){
+		cin >> input;
+		if (input == "0"){
+			cout << "Please input the reference frame: ";
+			cin >> mesh_ref_frame;
+
+		} else if (input == "1"){
+			mesh_ref_frame = "/pelvis";
+		} else {
+			continue;
+		}
+
+		break;
+	}
+}
+
 void MeshMaker::init_mesh_name()
 {
 	string input;
@@ -306,6 +337,7 @@ void MeshMaker::convert_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg)
 
 	//Run qhull externally (or see comments just below)
 	pcl::PolygonMesh::Ptr convex_hull = qhull.mk_mesh(intermediate_cloud);
+	convex_hull->cloud.header = pcl_conversions::toPCL(msg->header);
 
 	//In a system where qHull (libqhull5) is v2011.1, the below should work (untested).
 	//pcl::PolygonMesh::Ptr convex_hull = mk_mesh(intermediate_cloud);
@@ -328,7 +360,8 @@ bool MeshMaker::get_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg, pcl::Po
 {
 	cout << "MeshMaker::convert_cloud - Why does callback need const message?\n\t"
 		<< "Will it change what's in the topic if we non-const it?" << endl;
-	sensor_msgs::PointCloud2 temp_cloud = *msg;
+	sensor_msgs::PointCloud2 temp_cloud;
+	pcl_ros::transformPointCloud(mesh_ref_frame, *msg, temp_cloud, listener);
 	pcl::moveFromROSMsg(temp_cloud, *intermediate_cloud);
 
     if (!is_valid_cloud(intermediate_cloud)){       
@@ -545,9 +578,16 @@ void MeshMaker::mk_mesh_msg(shape_msgs::Mesh& msg, pcl::PolygonMesh::Ptr convex_
 	msg.vertices.clear();
 	msg.triangles.clear();
 
-	pcl::PointCloud<pcl::PointXYZ> cloud;
+	tf::TransformListener listener;
+
+	pcl::PointCloud<pcl::PointXYZ> cloud;//, temp_cloud;
 	pcl::fromPCLPointCloud2(convex_hull->cloud, cloud);
+	//tf::StampedTransform transform = get_pelvis_transform(temp_cloud.header.frame_id);
+	//pcl_ros::transformPointCloud(temp_cloud, cloud, transform);
+	//cout << "Conversion result: " << res << endl;
+
 	long num_pts = cloud.points.size();
+	cout << "Num pts in conversion result: " << num_pts << endl;
 	geometry_msgs::Point pt;
 	for (long i = 0; i < num_pts; ++i){
 		pt.x = cloud.points[i].x;
@@ -567,3 +607,25 @@ void MeshMaker::mk_mesh_msg(shape_msgs::Mesh& msg, pcl::PolygonMesh::Ptr convex_
 		msg.triangles.push_back(cur_facet);
 	}
 }
+/*
+sensor_msgs::PointCloud2 MeshMaker::transform_ptcloud(const sensor_msgs::PointCloud2& in_cloud, const string& target_frame)
+{
+	tf::TransformListener listener(n);
+	sensor_msgs::PointCloud2 out_cloud;
+	listener.waitForTransform(target_frame, in_cloud.header.frame_id, ros::Time::now(), ros::Duration(2.0));
+	while(1){
+		try {
+			listener.transformPointCloud(target_frame, in_cloud, out_cloud);
+			
+		} catch (tf::TransformException ex){
+			ROS_ERROR("%s",ex.what());
+			ros::Duration(1.0).sleep();
+
+		} catch(...){
+			ros::Duration(0.1).sleep();
+		}
+	}
+
+	return out_cloud;
+}
+*/

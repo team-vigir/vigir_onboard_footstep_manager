@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   shape_msgs
   visualization_msgs
+  pcl_ros
   message_generation
 )
 

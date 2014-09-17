@@ -7,7 +7,7 @@ import math
 def generate_grasp_params(gmodel, mesh_and_bounds_msg):
 	params = get_params(gmodel)
 
-	filtered_ray_idxs = filter_approach_rays(params['approachrays'], mesh_and_bounds_msg, num_return_rays=1)
+	#filtered_ray_idxs = filter_approach_rays(params['approachrays'], mesh_and_bounds_msg, num_return_rays=0)
 	params['rolls'] = limit_wrist_rolling()
 	params['preshapes'] = set_preshape(gmodel)
 	params['manipulatordirections'] = set_manip_approach_direction(gmodel)
@@ -17,13 +17,13 @@ def generate_grasp_params(gmodel, mesh_and_bounds_msg):
 	#print "__module__: ", params['approachrays'].__mod__#, params['approachrays'].__module__
 	#print "base: ", params['approachrays'].bases
 	#print params['approachrays']
-	print filtered_ray_idxs
+	#print filtered_ray_idxs
 	
 	#print "standoffs: ", params['standoffs']
 	#print "rolls: ", params['rolls']
-	params['approachrays'] = params['approachrays'].take(filtered_ray_idxs, axis=0)
-	print params['approachrays']
-	print params['graspingnoise']
+	#params['approachrays'] = params['approachrays'].take(filtered_ray_idxs, axis=0)
+	#print params['approachrays']
+	#print params['graspingnoise']
 	#params['graspingnoise'] = (0, 0)
 	#params['normalanglerange'] = 0
 	#params['spheredelta'] = 0
@@ -78,9 +78,14 @@ def filter_bounding_planes(initial_approach_rays, bplane1, bplane2, planes_are_o
 	return out_ray_idxs
 
 def random_ray_selection(ray_idxs, num_return_rays):
+	print "num_return_rays: ", num_return_rays
+	raw_input("is it good?")
 	if num_return_rays > len(ray_idxs):
 		print "Insufficient approach ray count: ", len(ray_idxs), " rays available and asked to select ", num_return_rays
 		return ray_idxs
+	elif num_return_rays == 0:
+		return ray_idxs
+
 	return random.sample(ray_idxs, num_return_rays)
 
 # The normal of the planes should point TOWARD THE ROBOT
@@ -115,8 +120,8 @@ def get_plane_dist(pt, plane_coefficient_list):
 #This is the number of wrist rolls to attempt around a given approach vector
 #	??What is this relative to? Current position?
 def limit_wrist_rolling():
-	#wrist_orientations = linspace(-math.pi / 2, math.pi / 2, num=3)
-	wrist_orientations = linspace(math.pi/2, math.pi/2, num=1)
+	wrist_orientations = linspace(-math.pi / 2, math.pi / 2, num=5)
+	#wrist_orientations = linspace(math.pi/2, math.pi/2, num=1)
 	print "wrist orientations: ", wrist_orientations
 	return wrist_orientations
 

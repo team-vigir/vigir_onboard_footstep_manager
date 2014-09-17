@@ -1,5 +1,6 @@
 #include <ros/ros.h>
 #include "osu_ros_adept/robot_movement_command.h"
+#include "hullify/Mesh_and_bounds.h"
 
 #include <moveit/move_group_interface/move_group.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
@@ -34,12 +35,15 @@ public:
 	void move_hand();
 	void set_hand_goal(const geometry_msgs::PoseStamped::ConstPtr& goal);
 	void print_current_physical_joint_state();
+	void mesh_msg_callback(const hullify::Mesh_and_bounds::ConstPtr& msg);
 
 private:
+	void init_planning_scene_topic();
 	void configure_movegroup();
 	void init_mk_movement_msg_template();
 	void add_table();
 	moveit_msgs::AttachedCollisionObject mk_table();
+	void add_mesh(const shape_msgs::Mesh& mesh);
 	void display_arm_trajectory();
 	void move_to_pregrasp_position();
 	void plan_to_new_goal();
@@ -55,6 +59,7 @@ private:
 	geometry_msgs::PoseStamped current_goal;
 	bool has_new_goal;
 
+	string planning_scene_topic;
 	ros::Publisher display_publisher;
 	ros::Publisher planning_scene_diff_publisher;
 	ros::ServiceClient action_request;
@@ -95,10 +100,12 @@ void recv_hand_pose_request(const geometry_msgs::PoseStamped::ConstPtr& msg)
 AdeptInterface::AdeptInterface()
 :group("adept_arm")
 {
+	init_planning_scene_topic();
 	configure_movegroup();
 
 	display_publisher = node_handle.advertise<moveit_msgs::DisplayTrajectory>("/move_group/jc_planned_path", 1, true);
 	action_request = node_handle.serviceClient<osu_ros_adept::robot_movement_command>("send_robot_movements");
+	planning_scene_diff_publisher = node_handle.advertise<moveit_msgs::PlanningScene>(planning_scene_topic, 1);
 	add_table();
 
 	cout << "Reference frame: " << group.getPlanningFrame() << endl;
@@ -108,6 +115,33 @@ AdeptInterface::AdeptInterface()
 	has_new_goal = false;
 
 	init_mk_movement_msg_template();
+}
+
+void AdeptInterface::init_planning_scene_topic()
+{
+	string input;
+	cout << "What is the planning scene topic for posting meshes and tables?"
+		<< "\n\t0 - new \n\t1 - /flor/planning/planning_scene"
+		<< "\n\t2 - /planning_scene" << endl;
+
+	while(1){
+		cin >> input;
+		if (input == "0"){
+			cout << "What is the topic? (needs a slash prefix): " << endl;
+
+		} else if (input == "1"){
+			planning_scene_topic = "/flor/planning/planning_scene";
+
+		} else if (input == "2"){
+			planning_scene_topic = "/planning_scene";
+
+		} else {
+			cout << "Improper entry. Please try again: " << endl;
+			continue;
+		}
+
+		break;
+	}
 }
 
 void AdeptInterface::configure_movegroup()
@@ -140,7 +174,6 @@ void AdeptInterface::init_mk_movement_msg_template()
 
 void AdeptInterface::add_table()
 {
-	planning_scene_diff_publisher = node_handle.advertise<moveit_msgs::PlanningScene>("planning_scene", 1);
 	cout << "Waiting for move_group to initialize properly before adding table..." << endl;
 	ros::service::waitForService("/get_planning_scene", ros::Duration(10));
 
@@ -152,6 +185,27 @@ void AdeptInterface::add_table()
 	planning_scene_diff_publisher.publish(planning_scene); 
 	
 	cout << "Posted the table." << endl;
+}
+
+void AdeptInterface::add_mesh(const shape_msgs::Mesh& mesh)
+{
+	moveit_msgs::CollisionObject moveit_mesh_msg;
+	moveit_mesh_msg.header.frame_id = "/pelvis";
+	moveit_mesh_msg.header.stamp = ros::Time::now();
+	moveit_mesh_msg.id = "openrave_grasp_target";
+
+	moveit_mesh_msg.meshes.push_back(mesh);
+	
+	moveit_mesh_msg.mesh_poses.push_back(geometry_msgs::Pose());
+	moveit_mesh_msg.mesh_poses[0].orientation.w = 1;
+	
+	moveit_mesh_msg.operation = moveit_mesh_msg.ADD;
+
+	moveit_msgs::PlanningScene planning_scene;
+	planning_scene.world.collision_objects.push_back(moveit_mesh_msg);
+	planning_scene.is_diff = true;
+	planning_scene_diff_publisher.publish(planning_scene);
+	
 }
 
 moveit_msgs::AttachedCollisionObject AdeptInterface::mk_table()
@@ -184,6 +238,11 @@ moveit_msgs::AttachedCollisionObject AdeptInterface::mk_table()
 	attached_object.object.operation = attached_object.object.ADD;
 
 	return attached_object;
+}
+
+void AdeptInterface::mesh_msg_callback(const hullify::Mesh_and_bounds::ConstPtr& msg)
+{
+	add_mesh(msg->convex_hull);
 }
 
 void AdeptInterface::set_hand_goal(const geometry_msgs::PoseStamped::ConstPtr& goal)

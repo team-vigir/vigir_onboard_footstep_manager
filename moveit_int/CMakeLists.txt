@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_ros_planning_interface
   roscpp
   osu_ros_adept
+  hullify
 )
 
 ## System dependencies are found with CMake's conventions

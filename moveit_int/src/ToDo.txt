@@ -1,0 +1,1 @@
+Make a template collision object and store it for later use.
