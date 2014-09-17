@@ -11,3 +11,5 @@ Make grasp into a position for ee, an approach and a roll. Use that just before 
 Set the palm facing direction to the manipulator's direction in the approach IK.
 
 Dynamically determine the distance from the palm's origin to its face...
+
+Catch grasping exceptions and continue

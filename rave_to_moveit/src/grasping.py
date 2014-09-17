@@ -375,7 +375,11 @@ class GraspingModel(DatabaseGenerator):
 
         """
         starttime = time.time()
-        statesaver = self.robot.CreateRobotStateSaver()
+        self.remaininggrasps = kwargs['remaininggrasps']
+	del(kwargs['remaininggrasps'])
+	#print "remaining grasps: ", self.remaininggrasps
+	#raw_input('...')
+	statesaver = self.robot.CreateRobotStateSaver()
         bodies = [(b,b.IsEnabled()) for b in self.env.GetBodies() if b != self.robot and b != self.target]
         if self.disableallbodies:
             for b in bodies:
@@ -394,7 +398,11 @@ class GraspingModel(DatabaseGenerator):
                         counter += 1
                         results = consumer(*work)
                         if len(results) > 0:
-                            gatherer(*results)
+			    gatherer(*results)
+                            if len(self.grasps) >= self.remaininggrasps:
+				print "Reached requested number of grasps."
+				break #we're done here
+
                     gatherer() # gather results
         finally:
             for b,enable in bodies:
