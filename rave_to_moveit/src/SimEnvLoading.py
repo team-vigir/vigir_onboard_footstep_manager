@@ -46,7 +46,7 @@ def build_environment():
 
 	env.SetViewer('qtcoin')
 	gt = tutorial_grasptransform.GraspTransform(env,target)
-	view_robot_ref_frames(robot)
+	#view_robot_ref_frames(robot)
 
 	return env, robot, target
 
@@ -127,17 +127,18 @@ class VigirGrasper:
 
 		#gmodel = grasping.GraspingModel(robot,target)
 		params = plane_filters.generate_grasp_params(self.gmodel, mesh_and_bounds_msg)
-		self.totalgrasps = self.get_grasps(mesh_and_bounds_msg, params, gt, returnnum=15)
+		self.totalgrasps = self.get_grasps(mesh_and_bounds_msg, params, gt, returnnum=8)
 		
 		if len(self.totalgrasps) == 0:
 			print "No suitable grasps found. Please select another pointcloud."
 			return
 
 		print len(self.totalgrasps), " Grasps available."
-		self.show_grasps(self.totalgrasps)
-		graspnum = "lol"
-		while int(graspnum) is false:
-			graspnum = input("Please enter number of valid grasps to return: ")
+		#self.show_grasps(self.totalgrasps)
+		graspnum = len(self.totalgrasps)
+		#graspnum = "lol"
+		#while int(graspnum) is false:
+		#	graspnum = input("Please enter number of valid grasps to return: ")
 		
 		pose_array = []
 		with robot:
@@ -150,10 +151,10 @@ class VigirGrasper:
 
 				x += 1
 		
-			print "pose_array: ", pose_array
+			#print "pose_array: ", pose_array
 
 		self.raveio.publish_poses(pose_array)
-		self.show_ik_on_request()
+		#self.show_ik_on_request()
 
 	def get_grasps(self, mesh_and_bounds_msg, params, gt, returnnum=5):
 		grasps = []
