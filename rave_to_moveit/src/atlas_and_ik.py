@@ -72,9 +72,12 @@ def load_ik(atlas):
 		print "Generating ikfiles using .autogenerate()"
 		ikmodel.autogenerate()
 
+def solve_ik(transform):
+	global ikmodel
+	return ikmodel.manip.FindIKSolutions(transform, IkFilterOptions.IgnoreEndEffectorEnvCollisions)
+
+
 #NO STANDOFF SUPPORT
-# Could perhaps be better to integrate the filtering with the grasp check...
-#	so, send in roll, position and approach dir and let that filter.
 def filter_approach_rays_using_ik(approach_rays, rolls):
 	global ikmodel
 
@@ -91,9 +94,8 @@ def filter_approach_rays_using_ik(approach_rays, rolls):
 	return out_rays
 
 def goal_pose_is_reachable(pos, approach, roll):
-	global ikmodel
 	transform = get_transform_for_approach(pos, approach, roll)
-	solutions = ikmodel.manip.FindIKSolutions(transform, IkFilterOptions.IgnoreEndEffectorEnvCollisions)
+	solutions = solve_ik(transform)
 
 	#print "Solutions: ", solutions
 	#raw_input("Were there solutions?")
@@ -142,3 +144,28 @@ def visualize_approaches(gt, params):
 	for ray in params['approachrays']:		
 		a1 = gt.drawTransform(get_transform_for_approach(ray[0:3], -ray[3:6], math.pi/2))
 		raw_input("How's the transform?")
+
+def visualize_ik_solution(env, transform):
+	solutions = solve_ik(transform)
+
+	if len(solutions) > 0:
+		print "Picking first solution"
+		newrobot = RaveCreateRobot(env, ikmodel.robot.GetXMLId())
+		newrobot.Clone(ikmodel.robot, 0)
+		for link in newrobot.GetLinks():
+			for geom in link.GetGeometries():
+				geom.SetTransparency(0.5)
+		env.Add(newrobot, True)
+		newrobot.SetTransform(ikmodel.robot.GetTransform())
+		indices = ikmodel.manip.GetArmIndices()
+		newrobot.SetDOFValues(solution[0], indices)
+		joint_values = ikmodel.robot.GetDOFValues(indices)
+		
+		print "Arm joint values: " 
+		for idx in range(0, len(joint_values)):
+			print ikmodel.robot.GetJointFromDOFIndex(indices[idx]).GetName(), joint_values[idx]
+
+	else:
+		print "No IK solution found for transform: ", transform
+
+

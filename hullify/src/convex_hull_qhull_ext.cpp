@@ -164,7 +164,7 @@ MeshMaker::MeshMaker()
 	view->add_topic_no_queue("principal_axis", marker_type);
 	view->add_topic_no_queue("end_effector_with_offset", marker_type);
 	view->add_topic_no_queue("original_third_component_axis", marker_type);
-	view->add_topic_no_queue("openrave_grasps", pose_type);
+	//view->add_topic_no_queue("openrave_grasps", pose_type);
 	view->add_topic_no_queue("openrave_params", openrave_type);
 	view->add_topic_no_queue("v1_in_plane", marker_type);
 	view->add_topic_no_queue("v2_in_plane", marker_type);
@@ -350,7 +350,7 @@ void MeshMaker::convert_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg)
 	bounds->publish_centroid();
 
 	geometry_msgs::PoseStamped wrist_pose = get_wrist_orientation(intermediate_cloud);
-	view->publish("openrave_grasps", wrist_pose);
+	//view->publish("openrave_grasps", wrist_pose);
 
 	string mesh_full_abs_path = view->publish_mesh(mesh_base_name, convex_hull);
 	send_hull_and_planes_to_openrave(mesh_full_abs_path, convex_hull);
