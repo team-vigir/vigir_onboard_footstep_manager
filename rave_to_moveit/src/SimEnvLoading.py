@@ -134,7 +134,7 @@ class VigirGrasper:
 			return
 
 		print len(self.totalgrasps), " Grasps available."
-		#self.show_grasps(self.totalgrasps)
+		self.show_grasps(self.totalgrasps)
 		graspnum = len(self.totalgrasps)
 		#graspnum = "lol"
 		#while int(graspnum) is false:
@@ -154,7 +154,7 @@ class VigirGrasper:
 			#print "pose_array: ", pose_array
 
 		self.raveio.publish_poses(pose_array)
-		#self.show_ik_on_request()
+		self.show_ik_on_request()
 
 	def get_grasps(self, mesh_and_bounds_msg, params, gt, returnnum=5):
 		grasps = []
@@ -183,11 +183,14 @@ class VigirGrasper:
 			self.gmodel.showgrasp(grasp)
 
 	def show_ik_on_request(self):
-		res = raw_input("Input the index of the grasp you would like IK for (q to quit): ")
-		while res != "q" or res != "Q":
-			transform = self.gmodel.getGlobalGraspTransform(self.totalgrasp[res],collisionfree=True)
+		while True:
+			res = raw_input("Input the index of the grasp you would like IK for (q to quit): ")
+			if res == "q" or res == "Q":
+				break
+			transform = self.gmodel.getGlobalGraspTransform(self.totalgrasps[int(res)],collisionfree=True)
 			atlas_and_ik.visualize_ik_solution(self.env, transform)
 	
+
 def partition_rays(mesh_and_bounds_msg, rays):
 	partitioned_rays = []
 	sweet_idxs = plane_filters.filter_bounding_planes(rays, mesh_and_bounds_msg.ninety_degree_bounding_planes[0].coef, mesh_and_bounds_msg.ninety_degree_bounding_planes[1].coef, False)

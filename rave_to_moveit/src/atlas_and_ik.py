@@ -150,16 +150,17 @@ def visualize_ik_solution(env, transform):
 
 	if len(solutions) > 0:
 		print "Picking first solution"
+		print "All solutions: ", solutions
 		newrobot = RaveCreateRobot(env, ikmodel.robot.GetXMLId())
 		newrobot.Clone(ikmodel.robot, 0)
 		for link in newrobot.GetLinks():
 			for geom in link.GetGeometries():
-				geom.SetTransparency(0.5)
+				geom.SetTransparency(0.8)
 		env.Add(newrobot, True)
 		newrobot.SetTransform(ikmodel.robot.GetTransform())
 		indices = ikmodel.manip.GetArmIndices()
-		newrobot.SetDOFValues(solution[0], indices)
-		joint_values = ikmodel.robot.GetDOFValues(indices)
+		newrobot.SetDOFValues(solutions[0], indices)
+		joint_values = newrobot.GetDOFValues(indices)
 		
 		print "Arm joint values: " 
 		for idx in range(0, len(joint_values)):

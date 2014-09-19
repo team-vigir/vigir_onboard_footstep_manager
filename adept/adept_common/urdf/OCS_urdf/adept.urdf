@@ -188,7 +188,7 @@
 		</inertial>
 	</link>
 	
-	<link name="Adept_Viper_650_Interface_Plate">
+	<link name="l_hand">
 		<visual>
 			<origin xyz="0 0 0" rpy="0 -1.5714 0"/>
 			<geometry>
@@ -295,13 +295,13 @@
 	<joint name="joint_6" type="revolute">
 		<origin xyz="0.0 0 0.08"/>
 		<parent link="Adept_Viper_s650_Link6"/>
-		<child link="Adept_Viper_650_Interface_Plate"/>
+		<child link="l_hand"/>
 		<axis xyz="0 0 1"/>
 		<limit effort="100" velocity="10.47" lower="-3.1416" upper="3.1416"/>
 	</joint>
 	<joint name="joint_7" type="fixed">
 		<origin rpy="1.55 0 0" xyz="0 0 0"/>
-		<parent link="Adept_Viper_650_Interface_Plate"/>
+		<parent link="l_hand"/>
 		<child link="Adept_Atlas_Connector"/>
 		<axis xyz="0 0 0"/>
 		<limit effort="100" velocity="10.47" lower="-3.1416" upper="3.1416"/>
