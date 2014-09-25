@@ -1,6 +1,6 @@
 #include <ros/ros.h>
 #include "osu_ros_adept/robot_movement_command.h"
-#include "hullify/Mesh_and_bounds.h"
+#include "osu_grasp_msgs/Mesh_and_bounds.h"
 
 #include <moveit/move_group_interface/move_group.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
@@ -35,7 +35,7 @@ public:
 	void move_hand();
 	void set_hand_goal(const geometry_msgs::PoseStamped::ConstPtr& goal);
 	void print_current_physical_joint_state();
-	void mesh_msg_callback(const hullify::Mesh_and_bounds::ConstPtr& msg);
+	void mesh_msg_callback(const osu_grasp_msgs::Mesh_and_bounds::ConstPtr& msg);
 
 private:
 	void init_planning_scene_topic();
@@ -240,7 +240,7 @@ moveit_msgs::AttachedCollisionObject AdeptInterface::mk_table()
 	return attached_object;
 }
 
-void AdeptInterface::mesh_msg_callback(const hullify::Mesh_and_bounds::ConstPtr& msg)
+void AdeptInterface::mesh_msg_callback(const osu_grasp_msgs::Mesh_and_bounds::ConstPtr& msg)
 {
 	add_mesh(msg->convex_hull);
 }

@@ -3,7 +3,7 @@
 #include "visualization_msgs/Marker.h"
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/Point.h>
-#include <hullify/Mesh_and_bounds.h>
+#include <osu_grasp_msgs/Mesh_and_bounds.h>
 #include <std_msgs/String.h>
 #include <tf/transform_listener.h>
 
@@ -67,7 +67,7 @@ class MeshMaker{
 		Eigen::Matrix3d get_principal_axes(pcl::PointCloud<pcl::PointXYZ>::Ptr pts_in_question);
 		void send_hull_and_planes_to_openrave(string& mesh_full_abs_path, pcl::PolygonMesh::Ptr convex_hull);
 		bool are_planes_obtuse(const Eigen::Vector3d& n1, const Eigen::Vector3d& n2);
-		void set_bounding_planes(hullify::Mesh_and_bounds& openrave_msg);
+		void set_bounding_planes(osu_grasp_msgs::Mesh_and_bounds& openrave_msg);
 		Eigen::Vector3d get_zero_degree_normal(Eigen::Vector3d& horiz_normal, Eigen::Vector3d& camera_to_centroid);
 		//void record_planes(hullify::Mesh_and_bounds& msg, Eigen::Vector3d& know_p_proper, Eigen::Vector3d& know_p_improper, Eigen::Vector3d& ninety_normal, Eigen::Vector3d& zero_normal);
 		//void set_openrave_msg_planes(hullify::Mesh_and_bounds& msg, Eigen::Vector3d strict_vec1, Eigen::Vector3d strict_vec2, Eigen::Vector3d relaxed_vec1, Eigen::Vector3d relaxed_vec2);
@@ -158,7 +158,7 @@ MeshMaker::MeshMaker()
 
 	visualization_msgs::Marker marker_type;
 	geometry_msgs::PoseStamped pose_type;
-	hullify::Mesh_and_bounds openrave_type;
+	osu_grasp_msgs::Mesh_and_bounds openrave_type;
 	geometry_msgs::PolygonStamped polygon_type;
 	view->add_mesh_topic(mesh_base_name);
 	view->add_topic_no_queue("principal_axis", marker_type);
@@ -475,7 +475,7 @@ Eigen::Matrix3d MeshMaker::get_principal_axes(pcl::PointCloud<pcl::PointXYZ>::Pt
 
 void MeshMaker::send_hull_and_planes_to_openrave(string& mesh_full_abs_path, pcl::PolygonMesh::Ptr convex_hull)
 {
-	hullify::Mesh_and_bounds openrave_msg;
+	osu_grasp_msgs::Mesh_and_bounds openrave_msg;
 
 	openrave_msg.header.frame_id = visualization_ref_frame;
 	openrave_msg.header.stamp = ros::Time::now();
@@ -486,7 +486,7 @@ void MeshMaker::send_hull_and_planes_to_openrave(string& mesh_full_abs_path, pcl
 	view->publish("openrave_params", openrave_msg);
 }
 
-void MeshMaker::set_bounding_planes(hullify::Mesh_and_bounds& openrave_msg)
+void MeshMaker::set_bounding_planes(osu_grasp_msgs::Mesh_and_bounds& openrave_msg)
 {
 	Eigen::Vector3d p1_normal = bounds->get_plane1_normal();
 	Eigen::Vector3d p2_normal = bounds->get_plane2_normal();
