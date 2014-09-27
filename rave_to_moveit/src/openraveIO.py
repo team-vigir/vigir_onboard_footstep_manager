@@ -6,7 +6,7 @@ from tf import transformations
 import geometry_msgs
 from geometry_msgs.msg import PoseArray
 from geometry_msgs.msg import PoseStamped
-from hullify.msg import Mesh_and_bounds
+from osu_grasp_msgs.msg import Mesh_and_bounds
 from std_msgs.msg import Header
 
 import numpy
