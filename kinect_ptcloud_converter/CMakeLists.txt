@@ -114,6 +114,7 @@ target_link_libraries(kinect_ptcloud_converter_node ${catkin_LIBRARIES})
 set_target_properties(kinect_ptcloud_converter_node PROPERTIES COMPILE_FLAGS "-Wall -g")
 
 add_executable(raycast_request_test src/raycast_retrieval_test.cpp)
+add_dependencies(raycast_request_test ${flor_perception_msgs_EXPORTED_TARGETS})
 target_link_libraries(raycast_request_test ${catkin_LIBRARIES})
 set_target_properties(raycast_request_test PROPERTIES COMPILE_FLAGS "-Wall -g")
 

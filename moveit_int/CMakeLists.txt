@@ -109,6 +109,7 @@ include_directories(
 # add_executable(moveit_int_node src/moveit_int_node.cpp)
 
 add_executable(programmatic_moveit src/programmatic_moveit.cpp)
+add_dependencies(programmatic_moveit ${osu_grasp_msgs_EXPORTED_TARGETS})
 target_link_libraries(programmatic_moveit ${catkin_LIBRARIES})
 set_target_properties(programmatic_moveit PROPERTIES COMPILE_FLAGS "-Wall -g")
 
