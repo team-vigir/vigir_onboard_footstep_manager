@@ -1,5 +1,0 @@
-<launch>
-	<include file = "$(find hullify)/launch/osu_adept_common.launch" />
-
-	<node pkg = "kinect_ptcloud_converter" name = "kinect_ptcloud_converter_node" type = "kinect_ptcloud_converter_node" launch-prefix = "xterm -e" />
-</launch>

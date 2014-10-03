@@ -1,1 +1,0 @@
-In the event that I, Jackson, am accused of leaking important and propriatary Atlas information regarding my collada file posts on the OpenRAVE mailing list, I will cite this public repository https://bitbucket.org/osrf/drcsim/downloads as having already released such sensitive information.

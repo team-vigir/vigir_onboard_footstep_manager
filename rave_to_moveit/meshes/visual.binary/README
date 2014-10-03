@@ -1,3 +1,0 @@
-These binary files must be used when creating collada files, otherwise, the full atlas model will not have hands, and we can't have that.
-
-Just place these files in the external/robotiq/robotiq-s-model-articulated visual and collision folders before you build. The URDFs in flor_atlas_description point there.

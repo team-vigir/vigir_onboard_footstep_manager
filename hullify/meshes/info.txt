@@ -1,1 +1,0 @@
-The point of this folder is to hold all meshes that are temporarily generated. None of the meshes are meant to be permanent and should not be uploaded to the repository.
