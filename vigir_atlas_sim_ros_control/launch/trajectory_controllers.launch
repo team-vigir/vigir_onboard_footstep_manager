@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+
+    <rosparam file="$(find vigir_atlas_sim_ros_control)/config/trajectory_controllers.yaml" command="load" ns="joint_controllers"/>
+    <node name="traj_controller_spawner" pkg="controller_manager" type="spawner" ns="joint_controllers" respawn="false" output="screen" args="left_arm_traj_controller right_arm_traj_controller torso_traj_controller left_leg_traj_controller right_leg_traj_controller neck_traj_controller" />
+
+</launch> 
