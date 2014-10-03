@@ -15,6 +15,7 @@ import grasping
 import plane_filters
 import atlas_and_ik
 import openraveIO
+import check_initial_collisions as collision_test
 
 gt = None
 cur_hand = "l_robotiq"
@@ -125,7 +126,6 @@ class VigirGrasper:
 
 		self.totalgrasps = []
 
-		#gmodel = grasping.GraspingModel(robot,target)
 		params = plane_filters.generate_grasp_params(self.gmodel, mesh_and_bounds_msg)
 		self.totalgrasps = self.get_grasps(mesh_and_bounds_msg, params, gt, returnnum=8)
 		
@@ -136,9 +136,6 @@ class VigirGrasper:
 		print len(self.totalgrasps), " Grasps available."
 		self.show_grasps(self.totalgrasps)
 		graspnum = len(self.totalgrasps)
-		#graspnum = "lol"
-		#while int(graspnum) is false:
-		#	graspnum = input("Please enter number of valid grasps to return: ")
 		
 		pose_array = []
 		with robot:
@@ -165,6 +162,7 @@ class VigirGrasper:
 			return []
 
 		for rays in partitioned_rays:
+			raw_input("Starting a new set of approach rays... Press a key to continue...")
 			params['approachrays'] = rays
 			params['remaininggrasps'] = returnnum - len(grasps)
 			#atlas_and_ik.visualize_approaches(gt, params)
@@ -238,6 +236,7 @@ if __name__ == '__main__':
 	
 	set_openrave_environment_vars()
 	env, robot, target = build_environment()
+	#collision_test.check_collisions(env, robot)
 	grasper = VigirGrasper(env, robot, target)
 	final_pose_frame = query_final_pose_frame()
 	mesh_ref_frame = "/pelvis"

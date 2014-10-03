@@ -24,7 +24,7 @@ def load_atlas(env):
 	atlas.SetTransform(world_orientation)
 	
 	#set_atlas_manipulators(atlas)
-	load_ik(atlas)
+	#load_ik(atlas)
 
 	return atlas
 
@@ -94,6 +94,9 @@ def filter_approach_rays_using_ik(approach_rays, rolls):
 	return out_rays
 
 def goal_pose_is_reachable(pos, approach, roll):
+	
+	return True
+
 	transform = get_transform_for_approach(pos, approach, roll)
 	solutions = solve_ik(transform)
 
