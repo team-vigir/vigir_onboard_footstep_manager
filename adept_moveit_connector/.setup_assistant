@@ -1,8 +1,0 @@
-moveit_setup_assistant_config:
-  URDF:
-    package: adept_common
-    relative_path: urdf/Connector_Hand_Adept_Viper_s650.urdf
-  SRDF:
-    relative_path: config/ADEPT_VIPER_S650.srdf
-  CONFIG:
-    generated_timestamp: 1407175399

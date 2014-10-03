@@ -1,9 +1,0 @@
-sensors: 
- - sensor_plugin: occupancy_map_monitor/PointCloudOctomapUpdater
-   point_cloud_topic: /camera/depth_registered/2hz_playback_pts
-   max_range: 5.0
-   point_subsample: 1
-   padding_offset: 5
-   padding_scale: 1
-   point_subsample: 1
-   filtered_cloud_topic: /MoveItKinectOctomap/output_cloud
