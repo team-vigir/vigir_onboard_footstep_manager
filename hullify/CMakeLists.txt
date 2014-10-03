@@ -121,7 +121,7 @@ add_executable(hull_tests src/hull_tests.cpp)
 target_link_libraries(hull_tests ${PCL_LIBRARIES} ${catkin_LIBRARIES})
 set_target_properties(hull_tests PROPERTIES COMPILE_FLAGS "-Wall -g")
 
-add_executable(convex_hull src/hullify_view.cpp src/convex_hull_qhull_ext.cpp src/qhull_interface.cpp src/mesh_bound.cpp src/plane_reps_and_3dmath.cpp src/pose_transform.cpp)
+add_executable(convex_hull src/hullify_view.cpp src/convex_hull_qhull_ext.cpp src/qhull_interface.cpp src/mesh_bound.cpp src/plane_reps_and_3dmath.cpp src/pose_transform.cpp src/cluster_segmentation.cpp)
 target_link_libraries(convex_hull ${PCL_LIBRARIES} ${catkin_LIBRARIES})
 set_target_properties(convex_hull PROPERTIES COMPILE_FLAGS "-Wall -g")
 

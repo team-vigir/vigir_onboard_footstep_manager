@@ -34,6 +34,7 @@
 #include "mesh_bound.h"
 #include "hullify_view.h"
 #include "pose_transform.h"
+#include "cluster_segmentation.h"
 
 #include <ctime>
 #include <cstdlib>
@@ -334,6 +335,9 @@ void MeshMaker::convert_cloud(const sensor_msgs::PointCloud2::ConstPtr& msg)
 	    	//Invalid cloud, return nothing.
 	    	return;
 	}
+
+	pcl::PointXYZ target_point;
+	get_cluster(intermediate_cloud, target_point);
 
 	//Run qhull externally (or see comments just below)
 	pcl::PolygonMesh::Ptr convex_hull = qhull.mk_mesh(intermediate_cloud);
