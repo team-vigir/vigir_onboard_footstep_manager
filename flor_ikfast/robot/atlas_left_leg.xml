@@ -1,9 +1,0 @@
-<Robot name="atlas" file="atlas.dae">
-  <Manipulator name="atlas_left_leg">
-    <base>pelvis</base>
-    <effector>l_foot</effector>
-    <direction>1 0 0</direction>
-    <translation>0 0 0</translation>
-  </Manipulator>
-</Robot>
-

@@ -1,9 +1,0 @@
-<Robot name="atlas" file="atlas_arm.dae">
-  <Manipulator name="atlas_left_arm">
-    <base>utorso</base>
-    <effector>l_hand</effector>
-    <direction>1 0 0</direction>
-    <translation>0 0 0</translation>
-  </Manipulator>
-</Robot>
-

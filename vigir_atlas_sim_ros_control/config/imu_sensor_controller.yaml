@@ -1,5 +1,0 @@
-# trajectory controllers ---------------------------------------
-  imu_sensor_controller:
-    type: "imu_sensor_controller/ImuSensorController"
-    publish_rate: 1000
-
