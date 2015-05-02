@@ -51,6 +51,7 @@
 #include <flor_ocs_msgs/OCSFootstepUpdate.h>
 #include <flor_ocs_msgs/OCSFootstepPlanGoal.h>
 #include <flor_ocs_msgs/OCSFootstepPlanGoalUpdate.h>
+#include <flor_ocs_msgs/OCSFootstepPlanRequest.h>
 
 #include <flor_ocs_msgs/OCSFootstepPlanParameters.h>
 
@@ -63,6 +64,7 @@
 #include <vigir_foot_pose_transformer/foot_pose_transformer.h>
 
 #include <actionlib/client/simple_action_client.h>
+#include <actionlib/server/simple_action_server.h>
 
 namespace onboard_footstep
 {
@@ -86,25 +88,25 @@ namespace onboard_footstep
         // triggers footstep planning via topic calls from OCS
 
         // Update single step
-        void processFootstepPoseUpdate(const flor_ocs_msgs::OCSFootstepUpdate::ConstPtr& msg); //
+        void processFootstepPoseUpdate(const flor_ocs_msgs::OCSFootstepUpdate::ConstPtr& msg); //// done
 
         // Update the goal feet poses from OCS (implicit request to replan with specified parameters)
-        void processFootstepPlanGoalUpdate(const flor_ocs_msgs::OCSFootstepPlanGoalUpdate::ConstPtr& plan_goal);
+        void processFootstepPlanGoalUpdate(const flor_ocs_msgs::OCSFootstepPlanGoalUpdate::ConstPtr& plan_goal); // shell only
 
         // Set a new 3D goal (x,y,yaw) and calculate feet poses from terrain (implicit request to replan)
-        void processFootstepPlanGoal(const flor_ocs_msgs::OCSFootstepPlanGoal::ConstPtr& plan_goal); //
+        void processFootstepPlanGoal(const flor_ocs_msgs::OCSFootstepPlanGoal::ConstPtr& plan_goal); // need replan request
 
         // Set planning parameters (e.g. timeout)
-        void processFootstepPlanParameters(const flor_ocs_msgs::OCSFootstepPlanParameters::ConstPtr& msg);
+        void processFootstepPlanParameters(const flor_ocs_msgs::OCSFootstepPlanParameters::ConstPtr& msg); //// done
 
         // Select a default parameter set for planning
-        void processFootstepParamSetSelected(const std_msgs::String::ConstPtr& msg); //
+        void processFootstepParamSetSelected(const std_msgs::String::ConstPtr& msg); //// stores name, no validation
 
         // Update with new plan from OCS (feet poses only, need to update parameters
-        void processFootstepPlanUpdate(const vigir_footstep_planning_msgs::StepPlan::ConstPtr& msg);
+        void processFootstepPlanUpdate(const vigir_footstep_planning_msgs::StepPlan::ConstPtr& msg); // shell only
 
         // Request to re-plan with different
-        void processFootstepPlanRequest(const std_msgs::String::ConstPtr& plan_request);
+        void processFootstepPlanRequest(const flor_ocs_msgs::OCSFootstepPlanRequest::ConstPtr& plan_request); // in progress
 
         // Execute via action call
 
@@ -148,31 +150,31 @@ namespace onboard_footstep
 
 
         // callbacks for action servers
-        void executeStepPlanRequestCB(const vigir_footstep_planning_msgs::StepPlanRequestActionGoalConstPtr& goal);
-        void executeExecuteStepPlanCB(const vigir_footstep_planning_msgs::ExecuteStepPlanActionGoalConstPtr& goal);
-
-        void timerCallback(const ros::TimerEvent& event);
+        void stepPlanRequestGoalCB();
+        void stepPlanRequestPreemptCB();
+        void executeStepPlanGoalCB();
+        void executeStepPlanPreemptCB();
+//        void executeStepPlanRequestCB(const vigir_footstep_planning_msgs::StepPlanRequestGoalConstPtr& goal);
+//        void executeExecuteStepPlanCB(const vigir_footstep_planning_msgs::ExecuteStepPlanGoalConstPtr& goal);
 
         // send action goals
-        void sendUpdateFeetGoal(vigir_footstep_planning_msgs::Feet feet);
         void sendStepPlanRequestGoal(vigir_footstep_planning_msgs::Feet start, vigir_footstep_planning_msgs::Feet goal, const unsigned int start_step_index = 0, const unsigned char start_foot = vigir_footstep_planning_msgs::StepPlanRequest::AUTO);
         void sendEditStepGoal(vigir_footstep_planning_msgs::StepPlan step_plan, vigir_footstep_planning_msgs::Step step);
-        void sendStitchStepPlanGoal(std::vector<vigir_footstep_planning_msgs::StepPlan>& step_plan_list);
         void sendUpdateStepPlanGoal(vigir_footstep_planning_msgs::StepPlan step_plan);
         void sendExecuteStepPlanGoal();
         void sendGetAllParameterSetsGoal();
 
-
         // plan requests
         bool calculateGoal(const geometry_msgs::PoseStamped& goal_pose); // calculate initial goal pose
         void requestStepPlanFromRobot();
-        void requestStepPlanFromStep(vigir_footstep_planning_msgs::Step &step);
-        void updateGoalVisMsgs();
-        void updateStepPlanVisMsgs();
+        void requestStepPlanFromStep(const vigir_footstep_planning_msgs::Step &step);
 
         // helper function for finding step based on step_index
         bool findStep(const unsigned int& step_index, vigir_footstep_planning_msgs::Step& step, unsigned int& step_plan_index );
         void publishPlannerStatus(const flor_ocs_msgs::OCSFootstepStatus::_status_type& status, const std::string& status_msg = "" );
+        bool processNewStepPlan(const vigir_footstep_planning_msgs::StepPlan& step_plan);
+        bool getStartFeet(vigir_footstep_planning_msgs::Feet& feet);
+
 
         ros::Timer timer;
 
@@ -214,9 +216,8 @@ namespace onboard_footstep
         vigir_footstep_planning_msgs::StepPlan                       current_step_plan_;
 
         // Footstep parameter sets
-        std::string                                selected_footstep_parameter_set_;
-        vigir_footstep_planning_msgs::ParameterSet current_footstep_parameters_;
-
+        std::vector<vigir_footstep_planning_msgs::ParameterSet> footstep_parameter_set_list_;
+        std::string                                             selected_footstep_parameter_set_;
 
         // Parameters
         geometry_msgs::Vector3 foot_size;

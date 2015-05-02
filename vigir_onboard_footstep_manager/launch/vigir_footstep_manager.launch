@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+
+<launch>
+  <arg name="namespace" default="/vigir/footstep_manager" />
+  <group ns="$(arg namespace)">
+    <!-- start up footstep manager system -->
+    <node name="onboard_footstep_manager" ns="$(arg namespace)" pkg="vigir_onboard_footstep_manager" type="onboard_footstep_manager" respawn="true" output="screen" />
+  </group>
+</launch>
