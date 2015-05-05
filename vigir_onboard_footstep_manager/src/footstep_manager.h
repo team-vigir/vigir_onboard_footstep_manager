@@ -76,6 +76,7 @@ namespace onboard_footstep
     typedef actionlib::SimpleActionClient<vigir_footstep_planning_msgs::ExecuteStepPlanAction>      ExecuteStepPlanClient;
     typedef actionlib::SimpleActionClient<vigir_footstep_planning_msgs::GetAllParameterSetsAction>  GetAllParameterSetsClient;
 
+    typedef actionlib::SimpleActionServer<vigir_footstep_planning_msgs::UpdateFeetAction>           UpdateFeetServer;
     typedef actionlib::SimpleActionServer<vigir_footstep_planning_msgs::StepPlanRequestAction>      StepPlanRequestServer;
     typedef actionlib::SimpleActionServer<vigir_footstep_planning_msgs::ExecuteStepPlanAction>      ExecuteStepPlanServer;
 
@@ -154,8 +155,8 @@ namespace onboard_footstep
         void stepPlanRequestPreemptCB();
         void executeStepPlanGoalCB();
         void executeStepPlanPreemptCB();
-//        void executeStepPlanRequestCB(const vigir_footstep_planning_msgs::StepPlanRequestGoalConstPtr& goal);
-//        void executeExecuteStepPlanCB(const vigir_footstep_planning_msgs::ExecuteStepPlanGoalConstPtr& goal);
+        void updateFeetGoalCB();
+        void updateFeetPreemptCB();
 
         // send action goals
         void sendStepPlanRequestGoal(vigir_footstep_planning_msgs::Feet start, vigir_footstep_planning_msgs::Feet goal, const unsigned int start_step_index = 0, const unsigned char start_foot = vigir_footstep_planning_msgs::StepPlanRequest::AUTO);
@@ -205,6 +206,7 @@ namespace onboard_footstep
         // Action servers
         StepPlanRequestServer*      step_plan_request_server_;
         ExecuteStepPlanServer*      execute_step_plan_server_;
+        UpdateFeetServer*           update_feet_server_;
 
         // messages
         vigir_footstep_planning_msgs::StepPlanRequestActionGoal      step_plan_request_goal_;

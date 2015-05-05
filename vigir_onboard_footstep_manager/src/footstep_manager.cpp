@@ -70,8 +70,9 @@ void FootstepManager::onInit()
     ocs_footstep_plan_request_sub_       = nh.subscribe<flor_ocs_msgs::OCSFootstepPlanRequest    >("replan_request",           1, &FootstepManager::processFootstepPlanRequest     , this);
 
     // Start the action servers that can be triggered by OCS or behaviors
-    step_plan_request_server_ = new StepPlanRequestServer(nh, "replan_request",   false);
+    step_plan_request_server_ = new StepPlanRequestServer(nh, "step_plan_request",   false);
     execute_step_plan_server_ = new ExecuteStepPlanServer(nh, "execute_step_plan",false);
+    update_feet_server_       = new UpdateFeetServer(nh, "update_feet",false);
 
     step_plan_request_server_->registerGoalCallback(boost::bind(&FootstepManager::stepPlanRequestGoalCB, this));
     step_plan_request_server_->registerPreemptCallback(boost::bind(&FootstepManager::stepPlanRequestPreemptCB, this));
@@ -81,14 +82,18 @@ void FootstepManager::onInit()
     execute_step_plan_server_->registerPreemptCallback(boost::bind(&FootstepManager::executeStepPlanPreemptCB, this));
     execute_step_plan_server_->start();
 
+    update_feet_server_->registerGoalCallback(boost::bind(&FootstepManager::updateFeetGoalCB, this));
+    update_feet_server_->registerPreemptCallback(boost::bind(&FootstepManager::updateFeetPreemptCB, this));
+    update_feet_server_->start();
+
     // client for feet pose generator service
     generate_feet_pose_client = nh.serviceClient<vigir_footstep_planning_msgs::GenerateFeetPoseService>("generate_feet_pose");
 
     // initialize all ros action clients
-    std::string planner_ns = "/vigir/footstep_planning";
-    nh.getParam("planner_namespace",planner_ns);
-    std::string controller_ns = "/robot_controllers/footstep_controller";
-    nh.getParam("controller_namespace",controller_ns);
+    std::string planner_ns, controller_ns;
+    ros::NodeHandle nhp("~");
+    nhp.param<std::string>("planner_namespace",   planner_ns,   "/vigir/footstep_planning");
+    nhp.param<std::string>("controller_namespace",controller_ns,"/robot_controllers/footstep_controller");
 
     ROS_INFO(" Connect planner action clients to %s",planner_ns.c_str());
     ROS_INFO(" Connect controller action clients to %s",controller_ns.c_str());
@@ -404,12 +409,16 @@ void FootstepManager::requestStepPlanFromStep(const vigir_footstep_planning_msgs
 // action callbacks for goal feet pose update request
 void FootstepManager::activeUpdateFeet()
 {
-    ROS_INFO("UpdateFeet: Status changed to active.");
+    ROS_INFO("OBFSM:  activeUpdateFeet : Status changed to active.");
 }
 
 void FootstepManager::feedbackUpdateFeet(const vigir_footstep_planning_msgs::UpdateFeetFeedbackConstPtr& feedback)
 {
-    ROS_INFO("UpdateFeet: Feedback received.");
+    ROS_INFO("OBFSM:  feedbackUpdateFeet: Feedback received.");
+    if (update_feet_server_->isActive())
+    {
+        update_feet_server_->publishFeedback(feedback);
+    }
 }
 
 // send updated status to ocs
@@ -422,19 +431,71 @@ void FootstepManager::publishPlannerStatus(const flor_ocs_msgs::OCSFootstepStatu
 }
 void FootstepManager::doneUpdateFeet(const actionlib::SimpleClientGoalState& state, const vigir_footstep_planning_msgs::UpdateFeetResultConstPtr& result)
 {
-    ROS_INFO("UpdateFeet: Got action response.\n");
-
-    if(vigir_footstep_planning::hasError(result->status) && result->status.error != vigir_footstep_planning_msgs::ErrorStatus::ERR_INVALID_TERRAIN_MODEL)
+    ROS_INFO("OBFSM:  doneUpdateFeet : Got action response.\n");
+    if (update_feet_server_->isActive())
     {
-        ROS_ERROR("UpdateFeet: Error occured!\n%s", vigir_footstep_planning::toString(result->status).c_str());
-        publishPlannerStatus(flor_ocs_msgs::OCSFootstepStatus::FOOTSTEP_INVALID_GOAL, vigir_footstep_planning::toString(result->status));
+        ROS_ERROR(" OBFSM:  doneUpdateFeet - set action result=%d (%s) from client state=%s!",result->status.error,result->status.error_msg.c_str(), state.toString().c_str());
+        if (actionlib::SimpleClientGoalState::SUCCEEDED  == state.state_)
+        {
+            if(vigir_footstep_planning::hasError(result->status) && result->status.error != vigir_footstep_planning_msgs::ErrorStatus::ERR_INVALID_TERRAIN_MODEL)
+            {
+                ROS_ERROR("UpdateFeet: Error occured!\n     %d: %s", result->status.error, vigir_footstep_planning::toString(result->status.error_msg).c_str());
+                publishPlannerStatus(flor_ocs_msgs::OCSFootstepStatus::FOOTSTEP_INVALID_GOAL, vigir_footstep_planning::toString(result->status));
+                update_feet_server_->setAborted(*result);
+            }
+            else
+            {
+                ROS_INFO("OBFSM:  doneUpdateFeet = Success!\n   %d: %s", result->status.error, vigir_footstep_planning::toString(result->status.error_msg).c_str());
+                update_feet_server_->setSucceeded(*result);
+
+                // update the goal feet
+                boost::recursive_mutex::scoped_lock lock(goal_mutex_);
+                goal_ = result->feet;
+
+            }
+        }
+        else if (actionlib::SimpleClientGoalState::ABORTED  == state.state_)
+        {
+            update_feet_server_->setAborted(*result);
+        }
+        else if (actionlib::SimpleClientGoalState::PREEMPTED  == state.state_)
+        {
+            update_feet_server_->setAborted(*result);
+
+        }
+        else if (actionlib::SimpleClientGoalState::RECALLED  == state.state_)
+        {
+            update_feet_server_->setAborted(*result);
+
+        }
+        else if (actionlib::SimpleClientGoalState::REJECTED  == state.state_)
+        {
+            update_feet_server_->setAborted(*result);
+        }
+        else
+        {
+            ROS_ERROR(" OBFSM: doneUpdateFeet  unhandled state=%s - with result %d: ^%s - abort server goal!",state.toString().c_str(), result->status.error, vigir_footstep_planning::toString(result->status.error_msg).c_str());
+            update_feet_server_->setAborted(*result);
+        }
+
     }
     else
     {
-        // update the goal feet
-        boost::recursive_mutex::scoped_lock lock(goal_mutex_);
-        goal_ = result->feet;
+        ROS_ERROR(" OBFSM:  doneUpdateFeet - action server was not active! - client result=%d:%s with state=%s!", result->status.error, vigir_footstep_planning::toString(result->status.error_msg).c_str(),state.toString().c_str());
 
+        if(vigir_footstep_planning::hasError(result->status) && result->status.error != vigir_footstep_planning_msgs::ErrorStatus::ERR_INVALID_TERRAIN_MODEL)
+        {
+            ROS_ERROR("UpdateFeet: Error occured!\n     %d : %s", result->status.error, vigir_footstep_planning::toString(result->status.error_msg).c_str());
+            publishPlannerStatus(flor_ocs_msgs::OCSFootstepStatus::FOOTSTEP_INVALID_GOAL, vigir_footstep_planning::toString(result->status));
+        }
+        else
+        {
+            // update the goal feet
+            ROS_INFO("OBFSM:  doneUpdateFeet = Success with no active action!\n   %d: %s", result->status.error, vigir_footstep_planning::toString(result->status.error_msg).c_str());
+            boost::recursive_mutex::scoped_lock lock(goal_mutex_);
+            goal_ = result->feet;
+
+        }
     }
 }
 
@@ -513,6 +574,10 @@ void FootstepManager::activeStepPlanRequest()
 void FootstepManager::feedbackStepPlanRequest(const vigir_footstep_planning_msgs::StepPlanRequestFeedbackConstPtr& feedback)
 {
     ROS_INFO("OBFMS:  StepPlanRequest: Feedback received. number visited steps = %ld",feedback->feedback.visited_steps.size()  );
+    if (step_plan_request_server_->isActive())
+    {
+        step_plan_request_server_->publishFeedback(feedback);
+    }
 }
 
 void FootstepManager::doneStepPlanRequest(const actionlib::SimpleClientGoalState& state, const vigir_footstep_planning_msgs::StepPlanRequestResultConstPtr& result)
@@ -523,24 +588,85 @@ void FootstepManager::doneStepPlanRequest(const actionlib::SimpleClientGoalState
     {
         ROS_ERROR("OBFMS:  StepPlanRequest: Error occured!\n%s", vigir_footstep_planning::toString(result->status).c_str());
         publishPlannerStatus(flor_ocs_msgs::OCSFootstepStatus::FOOTSTEP_PLANNER_FAILED, vigir_footstep_planning::toString(result->status));
+        if (step_plan_request_server_->isActive())
+        {
+            step_plan_request_server_->setAborted(*result);
+        }
     }
     else
     {
         // send update to glance_hub "done"
-        boost::recursive_mutex::scoped_lock lock(step_plan_mutex_);
-
-        if(result->step_plan.header.stamp.nsec != last_ocs_step_plan_stamp_.nsec || result->step_plan.header.stamp.sec != last_ocs_step_plan_stamp_.sec)
+        if (step_plan_request_server_->isActive())
         {
-            vigir_footstep_planning_msgs::StepPlan plan = result->step_plan;
-            if (processNewStepPlan(plan))
+            ROS_INFO(" OBFSM:  StepPlanRequest - set action result= %d:%s  from client state=%s!",result->status.error, result->status.error_msg.c_str(), state.toString().c_str());
+
+            if (actionlib::SimpleClientGoalState::SUCCEEDED  == state.state_)
             {
-                last_ocs_step_plan_stamp_ = result->step_plan.header.stamp;
+
+                boost::recursive_mutex::scoped_lock lock(step_plan_mutex_);
+
+                if(result->step_plan.header.stamp == goal_.header.stamp)
+                {
+                    step_plan_request_server_->setSucceeded(*result);
+                    vigir_footstep_planning_msgs::StepPlan plan = result->step_plan;
+                    if (processNewStepPlan(plan))
+                    {
+                        last_onboard_step_plan_stamp_ = result->step_plan.header.stamp;
+                    }
+
+                }
+                else
+                {
+                    step_plan_request_server_->setAborted(*result);
+                    ROS_ERROR("OBFSM:  StepPlanRequest : Ignoring plan with timestamp that does not match the goal! (%f, %f).",
+                              result->step_plan.header.stamp.toSec(), goal_.header.stamp.toSec());
+                    publishPlannerStatus(flor_ocs_msgs::OCSFootstepStatus::FOOTSTEP_MISMATCHED_TIMES, "Ignore mis-matched time stamps");
+                }
+
             }
+            else if (actionlib::SimpleClientGoalState::ABORTED  == state.state_)
+            {
+                step_plan_request_server_->setAborted(*result);
+            }
+            else if (actionlib::SimpleClientGoalState::PREEMPTED  == state.state_)
+            {
+                step_plan_request_server_->setAborted(*result);
+
+            }
+            else if (actionlib::SimpleClientGoalState::RECALLED  == state.state_)
+            {
+                step_plan_request_server_->setAborted(*result);
+
+            }
+            else if (actionlib::SimpleClientGoalState::REJECTED  == state.state_)
+            {
+                step_plan_request_server_->setAborted(*result);
+            }
+            else
+            {
+                ROS_ERROR(" OBFSM: StepPlanRequest  unhandled state=%s - abort server goal!",state.toString().c_str());
+                step_plan_request_server_->setAborted(*result);
+            }
+
         }
         else
         {
-            ROS_ERROR("StepPlanRequest: Ignoring repeated plan (%d, %d).", result->step_plan.header.stamp.sec, result->step_plan.header.stamp.nsec);
-            publishPlannerStatus(flor_ocs_msgs::OCSFootstepStatus::FOOTSTEP_PLANNER_FAILED, "Ignore repeated plan");
+            ROS_INFO("Received new step plan with time stamp=%f - must have been triggered by OCS!", result->step_plan.header.stamp.toSec());
+            boost::recursive_mutex::scoped_lock lock(step_plan_mutex_);
+
+            if(result->step_plan.header.stamp == goal_.header.stamp)
+            {
+                vigir_footstep_planning_msgs::StepPlan plan = result->step_plan;
+                if (processNewStepPlan(plan))
+                {
+                    last_onboard_step_plan_stamp_ = result->step_plan.header.stamp;
+                }
+            }
+            else
+            {
+                ROS_ERROR("StepPlanRequest: Ignoring repeated plan (%d, %d).", result->step_plan.header.stamp.sec, result->step_plan.header.stamp.nsec);
+                publishPlannerStatus(flor_ocs_msgs::OCSFootstepStatus::FOOTSTEP_PLANNER_FAILED, "Ignore repeated plan");
+            }
         }
 
     }
@@ -1069,6 +1195,39 @@ void FootstepManager::executeStepPlanPreemptCB()
     execute_step_plan_client_->cancelGoal();
 }
 
+void FootstepManager::updateFeetGoalCB()
+{
+
+    // trigger execution of client
+    if(update_feet_client_->isServerConnected())
+    {
+        // Fill in goal here and send it to the server (only the time stamp and parameters were really relevant)
+
+        vigir_footstep_planning_msgs::UpdateFeetGoal action_goal = *(update_feet_server_->acceptNewGoal());
+
+        update_feet_client_->sendGoal(action_goal,
+                                      boost::bind(&FootstepManager::doneUpdateFeet, this, _1, _2),
+                                      boost::bind(&FootstepManager::activeUpdateFeet, this),
+                                      boost::bind(&FootstepManager::feedbackUpdateFeet, this, _1));
+    }
+    else
+    {
+        vigir_footstep_planning_msgs::UpdateFeetResult result;
+        result.status.error =    vigir_footstep_planning_msgs::ErrorStatus::ERR_UNKNOWN;
+        result.status.error_msg = "Update Feet  Server not connected";
+        update_feet_server_->setAborted(result);
+
+        ROS_INFO("OBFSM:  updateFeetGoalCB: Footstep Update Feet Server not connected!");
+        publishPlannerStatus(flor_ocs_msgs::OCSFootstepStatus::FOOTSTEP_INVALID_GOAL, "Footstep Update Feet  Server not connected");
+    }
+
+}
+void FootstepManager::updateFeetPreemptCB()
+{
+    // pre-empt any active clients
+    ROS_INFO("Cancel any existing footstep goals executions!");
+    update_feet_client_->cancelGoal();
+}
 
 }
 
