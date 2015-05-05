@@ -256,13 +256,13 @@ bool FootstepManager::calculateGoal(const geometry_msgs::PoseStamped& goal_pose)
 
     if (!generate_feet_pose_client.call(feet_pose_service.request, feet_pose_service.response))
     {
-      ROS_ERROR("Can't call 'FeetPoseGenerator' service!");
+      ROS_ERROR("OBFSM:  calculateGoal: Can't call 'FeetPoseGenerator' service!");
       publishPlannerStatus(flor_ocs_msgs::OCSFootstepStatus::FOOTSTEP_INVALID_GOAL,vigir_footstep_planning::toString(feet_pose_service.response.status));
       return false;
     }
 
     // Valid goal for the feet
-    ROS_INFO("OBFSM: Received updated feet goals at (%f, %f, %f) and (%f, %f, %f) with goal pose=(%f, %f, %f)",
+    ROS_INFO("OBFSM: calculateGoal: Received updated feet goals at (%f, %f, %f) and (%f, %f, %f) with goal pose=(%f, %f, %f)",
              feet_pose_service.response.feet.left.pose.position.x,
              feet_pose_service.response.feet.left.pose.position.y,
              feet_pose_service.response.feet.left.pose.position.z,
@@ -443,7 +443,7 @@ void FootstepManager::doneUpdateFeet(const actionlib::SimpleClientGoalState& sta
     ROS_INFO("OBFSM:  doneUpdateFeet : Got action response.\n");
     if (update_feet_server_->isActive())
     {
-        ROS_ERROR(" OBFSM:  doneUpdateFeet - set action result=%d (%s) from client state=%s!",result->status.error,result->status.error_msg.c_str(), state.toString().c_str());
+        ROS_INFO(" OBFSM:  doneUpdateFeet - set action result=%d (%s) from client state=%s!",result->status.error,result->status.error_msg.c_str(), state.toString().c_str());
         if (actionlib::SimpleClientGoalState::SUCCEEDED  == state.state_)
         {
             if(vigir_footstep_planning::hasError(result->status) && result->status.error != vigir_footstep_planning_msgs::ErrorStatus::ERR_INVALID_TERRAIN_MODEL)
@@ -807,7 +807,7 @@ void FootstepManager::doneUpdateStepPlan(const actionlib::SimpleClientGoalState&
     }
     else
     {
-        ROS_ERROR("   OBFSM:  UpdateStepPlan: result %s with %ld steps", vigir_footstep_planning::toString(result->status).c_str(), result->step_plan.steps.size());
+        ROS_INFO("   OBFSM:  UpdateStepPlan: result %s with %ld steps", vigir_footstep_planning::toString(result->status).c_str(), result->step_plan.steps.size());
         processNewStepPlan(result->step_plan);
 
     }
@@ -892,7 +892,7 @@ void FootstepManager::doneExecuteStepPlan(const actionlib::SimpleClientGoalState
 
     if (execute_step_plan_server_->isActive())
     {
-        ROS_ERROR(" OBFSM:  doneExecuteStepPlan - set action result=%d  from client state=%s!",result->status.status, state.toString().c_str());
+        ROS_INFO(" OBFSM:  doneExecuteStepPlan - set action result=%d  from client state=%s!",result->status.status, state.toString().c_str());
         if (actionlib::SimpleClientGoalState::SUCCEEDED  == state.state_)
         {
             execute_step_plan_server_->setSucceeded(*result);
@@ -1258,7 +1258,7 @@ void FootstepManager::doneGenerateFeetPose(const actionlib::SimpleClientGoalStat
     ROS_INFO("OBFSM:  doneGenerateFeetPose : Got action response.\n");
     if (generate_feet_pose_server_->isActive())
     {
-        ROS_ERROR(" OBFSM:  doneGenerateFeetPose - set action result=%d (%s) from client state=%s!",result->status.error,result->status.error_msg.c_str(), state.toString().c_str());
+        ROS_INFO(" OBFSM:  doneGenerateFeetPose - set action result=%d (%s) from client state=%s!",result->status.error,result->status.error_msg.c_str(), state.toString().c_str());
         if (actionlib::SimpleClientGoalState::SUCCEEDED  == state.state_)
         {
             if(vigir_footstep_planning::hasError(result->status) && result->status.error != vigir_footstep_planning_msgs::ErrorStatus::ERR_INVALID_TERRAIN_MODEL)
