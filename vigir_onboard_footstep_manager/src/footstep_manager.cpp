@@ -91,7 +91,7 @@ void FootstepManager::onInit()
     generate_feet_pose_server_->start();
 
     // client for feet pose generator service
-    generate_feet_pose_client = nh.serviceClient<vigir_footstep_planning_msgs::GenerateFeetPoseService>("generate_feet_pose");
+    generate_feet_pose_service_client_ = nh.serviceClient<vigir_footstep_planning_msgs::GenerateFeetPoseService>("generate_feet_pose");
 
     // initialize all ros action clients
     std::string planner_ns, controller_ns;
@@ -103,7 +103,7 @@ void FootstepManager::onInit()
     ROS_INFO(" Connect controller action clients to %s",controller_ns.c_str());
 
     //generate feet considering intial goal
-    generate_feet_pose_client_      = new GenerateFeetPoseClient(planner_ns+"/generate_feet_pose", true);
+    generate_feet_pose_action_client_  = new GenerateFeetPoseClient(planner_ns+"/generate_feet_pose", true);
     //update feet considering intial goal
     update_feet_client_             = new UpdateFeetClient(planner_ns+"/update_feet", true);
     //plan request
@@ -118,6 +118,10 @@ void FootstepManager::onInit()
     execute_step_plan_client_       = new ExecuteStepPlanClient(controller_ns+"/execute_step_plan", true);
 
     //wait for servers to come online
+    while(!generate_feet_pose_action_client_->waitForServer(ros::Duration(5.0)) && ros::ok())
+    {
+        ROS_INFO("Waiting for the generate_feet_pose_action server to come up");
+    }
     while(!update_feet_client_->waitForServer(ros::Duration(5.0)) && ros::ok())
     {
         ROS_INFO("Waiting for the update_feet server to come up");
@@ -254,7 +258,7 @@ bool FootstepManager::calculateGoal(const geometry_msgs::PoseStamped& goal_pose)
     feet_pose_service.request.request.pose   = goal_pose.pose;
     feet_pose_service.request.request.flags  = vigir_footstep_planning_msgs::FeetPoseRequest::FLAG_CURRENT_Z; // this is for 3D interaction
 
-    if (!generate_feet_pose_client.call(feet_pose_service.request, feet_pose_service.response))
+    if (!generate_feet_pose_service_client_.call(feet_pose_service.request, feet_pose_service.response))
     {
       ROS_ERROR("OBFSM:  calculateGoal: Can't call 'FeetPoseGenerator' service!");
       publishPlannerStatus(flor_ocs_msgs::OCSFootstepStatus::FOOTSTEP_INVALID_GOAL,vigir_footstep_planning::toString(feet_pose_service.response.status));
@@ -359,9 +363,10 @@ bool FootstepManager::getStartFeet(vigir_footstep_planning_msgs::Feet& start_fee
     feet_pose_service.request.request.header.stamp = ros::Time::now();
     feet_pose_service.request.request.flags = vigir_footstep_planning_msgs::FeetPoseRequest::FLAG_CURRENT;
 
-    if (!generate_feet_pose_client.call(feet_pose_service.request, feet_pose_service.response))
+    if (!generate_feet_pose_service_client_.call(feet_pose_service.request, feet_pose_service.response))
     {
-      ROS_ERROR("Can't call 'FeetPoseGenerator'!");
+      ROS_ERROR("OBFSM:  getStartFeet: Can't call 'FeetPoseGenerator'!");
+      publishPlannerStatus(flor_ocs_msgs::OCSFootstepStatus::FOOTSTEP_INVALID_START,"OBFSM:  getStartFeet: Can't call 'FeetPoseGenerator'!");
       return false;
     }
 
@@ -369,13 +374,13 @@ bool FootstepManager::getStartFeet(vigir_footstep_planning_msgs::Feet& start_fee
     if (vigir_footstep_planning::hasError(feet_pose_service.response.status))
     {
       ROS_ERROR("Error occured while requesting current feet pose:\n%s", vigir_footstep_planning::toString(feet_pose_service.response.status).c_str());
-      publishPlannerStatus(flor_ocs_msgs::OCSFootstepStatus::FOOTSTEP_INVALID_GOAL,vigir_footstep_planning::toString(feet_pose_service.response.status));
+      publishPlannerStatus(flor_ocs_msgs::OCSFootstepStatus::FOOTSTEP_INVALID_START,vigir_footstep_planning::toString(feet_pose_service.response.status));
       return false;
     }
     else if (vigir_footstep_planning::hasWarning(feet_pose_service.response.status))
     {
       ROS_ERROR("Warning occured while requesting current feet pose:\n%s", vigir_footstep_planning::toString(feet_pose_service.response.status).c_str());
-      publishPlannerStatus(flor_ocs_msgs::OCSFootstepStatus::FOOTSTEP_INVALID_GOAL,vigir_footstep_planning::toString(feet_pose_service.response.status));
+      publishPlannerStatus(flor_ocs_msgs::OCSFootstepStatus::FOOTSTEP_INVALID_START,vigir_footstep_planning::toString(feet_pose_service.response.status));
       return false;
     }
 
@@ -1086,7 +1091,7 @@ void FootstepManager::stepPlanRequestGoalCB()
 
                 ROS_INFO("OBFSM:  stepPlanRequestGoalCB: invalid start location for feet!" );
                 publishPlannerStatus(flor_ocs_msgs::OCSFootstepStatus::FOOTSTEP_PLANNER_ERROR, "Footstep planning - invalid start location for feet!");
-
+                return;
             }
 
             request.goal  = goal_;
@@ -1129,7 +1134,7 @@ void FootstepManager::stepPlanRequestGoalCB()
 
             ROS_INFO("OBFSM:  stepPlanRequestGoalCB: Footstep plan timestamp mismatch %f vs. %f!", action_goal.plan_request.header.stamp.toSec(), current_step_plan_.header.stamp.toSec());
             publishPlannerStatus(flor_ocs_msgs::OCSFootstepStatus::FOOTSTEP_PLANNER_ERROR, "Footstep Execution invalid plan timestamps");
-
+            return;
         }
     }
     else
@@ -1183,7 +1188,7 @@ void FootstepManager::executeStepPlanGoalCB()
             execute_step_plan_server_->setAborted(result);
             ROS_INFO("OBFSM:  executeStepPlanGoalCB: Footstep plan timestamp mismatch %f vs. %f!", action_goal.step_plan.header.stamp.toSec(), current_step_plan_.header.stamp.toSec());
             publishPlannerStatus(flor_ocs_msgs::OCSFootstepStatus::FOOTSTEP_EXECUTION_FAILED, "Footstep Execution invalid plan timestamps");
-
+            return;
         }
     }
     else
@@ -1328,12 +1333,12 @@ void FootstepManager::generateFeetPoseGoalCB()
 {
 
     // trigger execution of client
-    if(generate_feet_pose_client_->isServerConnected())
+    if(generate_feet_pose_action_client_->isServerConnected())
     {
         // Fill in goal here and send it to the server
         vigir_footstep_planning_msgs::GenerateFeetPoseGoal action_goal = *(generate_feet_pose_server_->acceptNewGoal());
 
-        generate_feet_pose_client_->sendGoal(action_goal,
+        generate_feet_pose_action_client_->sendGoal(action_goal,
                                       boost::bind(&FootstepManager::doneGenerateFeetPose, this, _1, _2),
                                       boost::bind(&FootstepManager::activeGenerateFeetPose, this),
                                       boost::bind(&FootstepManager::feedbackGenerateFeetPose, this, _1));
@@ -1354,7 +1359,7 @@ void FootstepManager::generateFeetPosePreemptCB()
 {
     // pre-empt any active clients
     ROS_INFO("Cancel any existing footstep feet pose requests!");
-    generate_feet_pose_client_->cancelGoal();
+    generate_feet_pose_action_client_->cancelGoal();
 }
 
 

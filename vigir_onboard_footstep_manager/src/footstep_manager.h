@@ -202,10 +202,10 @@ namespace onboard_footstep
         ros::Subscriber ocs_footstep_plan_request_sub_;
 
         // feet pose generator client
-        ros::ServiceClient          generate_feet_pose_client;
+        ros::ServiceClient          generate_feet_pose_service_client_;
 
         // Action clients
-        GenerateFeetPoseClient*     generate_feet_pose_client_;
+        GenerateFeetPoseClient*     generate_feet_pose_action_client_;
         UpdateFeetClient*           update_feet_client_;
         StepPlanRequestClient*      step_plan_request_client_;
         EditStepClient*             edit_step_client_;
