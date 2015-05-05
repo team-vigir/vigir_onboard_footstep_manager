@@ -75,10 +75,12 @@ namespace onboard_footstep
     typedef actionlib::SimpleActionClient<vigir_footstep_planning_msgs::UpdateStepPlanAction>       UpdateStepPlanClient;
     typedef actionlib::SimpleActionClient<vigir_footstep_planning_msgs::ExecuteStepPlanAction>      ExecuteStepPlanClient;
     typedef actionlib::SimpleActionClient<vigir_footstep_planning_msgs::GetAllParameterSetsAction>  GetAllParameterSetsClient;
+    typedef actionlib::SimpleActionClient<vigir_footstep_planning_msgs::GenerateFeetPoseAction>     GenerateFeetPoseClient;
 
     typedef actionlib::SimpleActionServer<vigir_footstep_planning_msgs::UpdateFeetAction>           UpdateFeetServer;
     typedef actionlib::SimpleActionServer<vigir_footstep_planning_msgs::StepPlanRequestAction>      StepPlanRequestServer;
     typedef actionlib::SimpleActionServer<vigir_footstep_planning_msgs::ExecuteStepPlanAction>      ExecuteStepPlanServer;
+    typedef actionlib::SimpleActionServer<vigir_footstep_planning_msgs::GenerateFeetPoseAction>     GenerateFeetPoseServer;
 
 
     class FootstepManager : public nodelet::Nodelet
@@ -119,6 +121,11 @@ namespace onboard_footstep
     private:
 
         // callbacks for action clients
+        //generate feet pose
+        void activeGenerateFeetPose();
+        void feedbackGenerateFeetPose(const vigir_footstep_planning_msgs::GenerateFeetPoseFeedbackConstPtr& feedback);
+        void doneGenerateFeetPose(const actionlib::SimpleClientGoalState& state, const vigir_footstep_planning_msgs::GenerateFeetPoseResultConstPtr& result);
+
         //updatefeet
         void activeUpdateFeet();
         void feedbackUpdateFeet(const vigir_footstep_planning_msgs::UpdateFeetFeedbackConstPtr& feedback);
@@ -157,6 +164,8 @@ namespace onboard_footstep
         void executeStepPlanPreemptCB();
         void updateFeetGoalCB();
         void updateFeetPreemptCB();
+        void generateFeetPoseGoalCB();
+        void generateFeetPosePreemptCB();
 
         // send action goals
         void sendStepPlanRequestGoal(vigir_footstep_planning_msgs::Feet start, vigir_footstep_planning_msgs::Feet goal, const unsigned int start_step_index = 0, const unsigned char start_foot = vigir_footstep_planning_msgs::StepPlanRequest::AUTO);
@@ -196,6 +205,7 @@ namespace onboard_footstep
         ros::ServiceClient          generate_feet_pose_client;
 
         // Action clients
+        GenerateFeetPoseClient*     generate_feet_pose_client_;
         UpdateFeetClient*           update_feet_client_;
         StepPlanRequestClient*      step_plan_request_client_;
         EditStepClient*             edit_step_client_;
@@ -207,6 +217,7 @@ namespace onboard_footstep
         StepPlanRequestServer*      step_plan_request_server_;
         ExecuteStepPlanServer*      execute_step_plan_server_;
         UpdateFeetServer*           update_feet_server_;
+        GenerateFeetPoseServer*     generate_feet_pose_server_;
 
         // messages
         vigir_footstep_planning_msgs::StepPlanRequestActionGoal      step_plan_request_goal_;
@@ -228,6 +239,7 @@ namespace onboard_footstep
         geometry_msgs::Vector3 upper_body_origin_shift;
 
         // used to calculate feet poses for start/end of footstep plan
+        geometry_msgs::PoseStamped          active_goal_pose_;
         geometry_msgs::PoseStamped          goal_pose_;
         vigir_footstep_planning_msgs::Feet  goal_;
 
