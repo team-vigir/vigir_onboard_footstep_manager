@@ -52,6 +52,24 @@ void FootstepManager::onInit()
     nh.param("upper_body/origin_shift/y", upper_body_origin_shift.y, 0.0);
     nh.param("upper_body/origin_shift/z", upper_body_origin_shift.z, 0.0);
 
+    // Load default parameters for planner
+    ros::NodeHandle nhp("~");
+    double  dval;
+    int32_t ival;
+
+    nhp.param("max_planning_time"    , dval, 20.0); planner_config_.max_time         = dval;
+    nhp.param("max_number_steps"     , ival, 100);  planner_config_.max_steps        = ival;
+    nhp.param("max_path_length_ratio", dval, 5.0);  planner_config_.path_length_ratio= dval;
+    nhp.param("edit_mode",             ival, 0 );   planner_config_.edit_mode        = ival;
+    nhp.param("use_3d_planning",       ival, 0);    planner_config_.use_3d_planning  = ival;
+
+    ROS_INFO("Loaded default planner_config_:  max_planning_time=%f, max_number_steps=%d, max_path_length_ratio=%f,  edit mode=%d, use_3d_planning=%d",
+            planner_config_.max_time,
+            planner_config_.max_steps,
+            planner_config_.path_length_ratio,
+            planner_config_.edit_mode,
+            planner_config_.use_3d_planning);
+
     // planner will always create new plans if this is unchanged
     start_step_index_ = -1;
 
@@ -92,7 +110,6 @@ void FootstepManager::onInit()
 
     // initialize all ros action clients
     std::string planner_ns, controller_ns;
-    ros::NodeHandle nhp("~");
     nhp.param<std::string>("planner_namespace",   planner_ns,   "/vigir/footstep_planning");
     nhp.param<std::string>("controller_namespace",controller_ns,"/robot_controllers/footstep_controller");
 
@@ -546,8 +563,8 @@ void FootstepManager::sendStepPlanRequestGoal(vigir_footstep_planning_msgs::Feet
             request.planning_mode = vigir_footstep_planning_msgs::StepPlanRequest::PLANNING_MODE_2D;
 
         // need to get the following from the OCS as well
-        request.max_planning_time = planner_config_.max_time;
-        request.max_number_steps = planner_config_.max_steps;
+        request.max_planning_time     = planner_config_.max_time;
+        request.max_number_steps      = planner_config_.max_steps;
         request.max_path_length_ratio = planner_config_.path_length_ratio;
 
         // and then use the selected parameter set
@@ -1109,8 +1126,8 @@ void FootstepManager::stepPlanRequestGoalCB()
                     request.planning_mode = vigir_footstep_planning_msgs::StepPlanRequest::PLANNING_MODE_2D;
 
                 // need to get the following from the OCS as well
-                request.max_planning_time = planner_config_.max_time;
-                request.max_number_steps = planner_config_.max_steps;
+                request.max_planning_time     = planner_config_.max_time;
+                request.max_number_steps      = planner_config_.max_steps;
                 request.max_path_length_ratio = planner_config_.path_length_ratio;
 
                 // and then use the selected parameter set
