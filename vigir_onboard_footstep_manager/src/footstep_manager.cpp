@@ -90,9 +90,6 @@ void FootstepManager::onInit()
     generate_feet_pose_server_->registerPreemptCallback(boost::bind(&FootstepManager::generateFeetPosePreemptCB, this));
     generate_feet_pose_server_->start();
 
-    // client for feet pose generator service
-    generate_feet_pose_service_client_ = nh.serviceClient<vigir_footstep_planning_msgs::GenerateFeetPoseService>("generate_feet_pose");
-
     // initialize all ros action clients
     std::string planner_ns, controller_ns;
     ros::NodeHandle nhp("~");
@@ -101,6 +98,9 @@ void FootstepManager::onInit()
 
     ROS_INFO(" Connect planner action clients to %s",planner_ns.c_str());
     ROS_INFO(" Connect controller action clients to %s",controller_ns.c_str());
+
+    // client for feet pose generator service
+    generate_feet_pose_service_client_ = nh.serviceClient<vigir_footstep_planning_msgs::GenerateFeetPoseService>(planner_ns + "/generate_feet_pose");
 
     //generate feet considering intial goal
     generate_feet_pose_action_client_  = new GenerateFeetPoseClient(planner_ns+"/generate_feet_pose", true);
@@ -581,13 +581,13 @@ void FootstepManager::sendStepPlanRequestGoal(vigir_footstep_planning_msgs::Feet
 // action callbacks for step plan request
 void FootstepManager::activeStepPlanRequest()
 {
-    ROS_INFO("OBFMS:  StepPlanRequest: Status changed to active.");
+    ROS_INFO("OBFSM:  StepPlanRequest: Status changed to active.");
     publishPlannerStatus(flor_ocs_msgs::OCSFootstepStatus::FOOTSTEP_PLANNER_ACTIVE, "Footstep planning is active");
 }
 
 void FootstepManager::feedbackStepPlanRequest(const vigir_footstep_planning_msgs::StepPlanRequestFeedbackConstPtr& feedback)
 {
-    ROS_INFO("OBFMS:  StepPlanRequest: Feedback received. number visited steps = %ld",feedback->feedback.visited_steps.size()  );
+    ROS_INFO("OBFSM:  StepPlanRequest: Feedback received. number visited steps = %ld",feedback->feedback.visited_steps.size()  );
     if (step_plan_request_server_->isActive())
     {
         step_plan_request_server_->publishFeedback(feedback);
@@ -596,11 +596,11 @@ void FootstepManager::feedbackStepPlanRequest(const vigir_footstep_planning_msgs
 
 void FootstepManager::doneStepPlanRequest(const actionlib::SimpleClientGoalState& state, const vigir_footstep_planning_msgs::StepPlanRequestResultConstPtr& result)
 {
-    ROS_INFO("OBFMS:  StepPlanRequest: Got action response.");
+    ROS_INFO("OBFSM:  StepPlanRequest: Got action response.");
 
     if(vigir_footstep_planning::hasError(result->status))
     {
-        ROS_ERROR("OBFMS:  StepPlanRequest: Error occured!\n%s", vigir_footstep_planning::toString(result->status).c_str());
+        ROS_ERROR("OBFSM:  StepPlanRequest: Error occured!\n%s", vigir_footstep_planning::toString(result->status).c_str());
         publishPlannerStatus(flor_ocs_msgs::OCSFootstepStatus::FOOTSTEP_PLANNER_FAILED, vigir_footstep_planning::toString(result->status));
         if (step_plan_request_server_->isActive())
         {
