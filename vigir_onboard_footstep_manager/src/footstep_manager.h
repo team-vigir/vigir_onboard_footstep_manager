@@ -192,6 +192,7 @@ namespace onboard_footstep
         ros::Publisher  onboard_planner_status_pub_;
         ros::Publisher  onboard_planner_parameter_set_pub_;
         ros::Publisher  onboard_planner_configuration_pub_;
+        ros::Publisher  onboard_footstep_plan_request_pub_;
 
         ros::Subscriber ocs_footstep_update_sub_;
         ros::Subscriber ocs_footstep_plan_goal_update_sub_;
