@@ -12,6 +12,7 @@
       <param name="max_path_length_ratio" value="4.5" />
       <param name="edit_mode"             value= "0"  />
       <param name="use_3d_planning"       value= "0"  />
+      <param name="default_planning_parameter_set_name" value="drc_step_2D" />
     </node>
   </group>
 </launch>
