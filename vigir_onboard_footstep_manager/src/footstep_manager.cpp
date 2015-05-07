@@ -1146,10 +1146,14 @@ void FootstepManager::stepPlanRequestGoalCB()
                 // Update the planner parameters used in this request
                 boost::recursive_mutex::scoped_lock lock(param_mutex_);
                 // default planning mode is 2D, but will get that from the OCS
-                if(planner_config_.use_3d_planning)
-                    request.planning_mode = vigir_footstep_planning_msgs::StepPlanRequest::PLANNING_MODE_3D;
-                else
-                    request.planning_mode = vigir_footstep_planning_msgs::StepPlanRequest::PLANNING_MODE_2D;
+                if (vigir_footstep_planning_msgs::StepPlanRequest::PLANNING_MODE_PATTERN  != request.planning_mode)
+                { // plan based on setup defined by operator, but retain for pattern requests
+                    if(planner_config_.use_3d_planning)
+                        request.planning_mode = vigir_footstep_planning_msgs::StepPlanRequest::PLANNING_MODE_3D;
+                    else
+                        request.planning_mode = vigir_footstep_planning_msgs::StepPlanRequest::PLANNING_MODE_2D;
+                    ROS_INFO(" Using planning mode = %d as specified by operator",request.planning_mode);
+                }
 
                 // need to get the following from the OCS as well
                 request.max_planning_time     = planner_config_.max_time;
