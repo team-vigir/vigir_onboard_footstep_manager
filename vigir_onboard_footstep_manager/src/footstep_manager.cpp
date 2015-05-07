@@ -62,7 +62,7 @@ void FootstepManager::onInit()
     nhp.param("max_path_length_ratio", dval, 5.0);  planner_config_.path_length_ratio= dval;
     nhp.param("edit_mode",             ival, 0 );   planner_config_.edit_mode        = ival;
     nhp.param("use_3d_planning",       ival, 0);    planner_config_.use_3d_planning  = ival;
-    nhp.param("default_planning_parameter_set_name",selected_footstep_parameter_set_, "drc_step_2D");
+    nhp.param("default_planning_parameter_set_name",selected_footstep_parameter_set_, std::string("drc_step_2D"));
 
     ROS_INFO("Loaded default planner_config_:  max_planning_time=%f, max_number_steps=%d, max_path_length_ratio=%f,  edit mode=%d, use_3d_planning=%d",
             planner_config_.max_time,
