@@ -1109,6 +1109,8 @@ bool FootstepManager::findStep(const unsigned int& step_index, vigir_footstep_pl
 void FootstepManager::stepPlanRequestGoalCB()
 {
     // New goal - invoke the planner and register callbacks
+    vigir_footstep_planning_msgs::StepPlanRequestGoal action_goal = *(step_plan_request_server_->acceptNewGoal());
+
     // trigger execution of client
     if(step_plan_request_client_->isServerConnected())
     {
@@ -1117,12 +1119,11 @@ void FootstepManager::stepPlanRequestGoalCB()
         // lock the goal
         boost::recursive_mutex::scoped_lock goal_lock(goal_mutex_);
 
-        vigir_footstep_planning_msgs::StepPlanRequestGoal action_goal = *(step_plan_request_server_->acceptNewGoal());
-        if (action_goal.plan_request.header.stamp == goal_.header.stamp)
-        {  // goal --> plan --> execute should use consistent time stamps
+        // Update the planning parameters
+        vigir_footstep_planning_msgs::StepPlanRequest& request = action_goal.plan_request;
 
-            // Update the planning parameters
-            vigir_footstep_planning_msgs::StepPlanRequest& request = action_goal.plan_request;
+        if ((request.header.stamp == goal_.header.stamp) || (vigir_footstep_planning_msgs::StepPlanRequest::PLANNING_MODE_PATTERN  == request.planning_mode))
+        {  // goal --> plan --> execute should use consistent time stamps, but pattern step overrides the current goal/step pattern
 
             request.header.frame_id = "/world";
 
@@ -1134,6 +1135,7 @@ void FootstepManager::stepPlanRequestGoalCB()
 
                 ROS_INFO("OBFSM:  stepPlanRequestGoalCB: invalid start location for feet!" );
                 publishPlannerStatus(flor_ocs_msgs::OCSFootstepStatus::FOOTSTEP_PLANNER_ERROR, "Footstep planning - invalid start location for feet!");
+
                 return;
             }
 
@@ -1153,6 +1155,12 @@ void FootstepManager::stepPlanRequestGoalCB()
                     else
                         request.planning_mode = vigir_footstep_planning_msgs::StepPlanRequest::PLANNING_MODE_2D;
                     ROS_INFO(" Using planning mode = %d as specified by operator",request.planning_mode);
+                }
+                else
+                {
+                    boost::recursive_mutex::scoped_lock plan_lock(step_plan_mutex_);
+                    current_step_plan_.header.stamp = ros::Time(); // reset when requesting a pattern move to force regular replan latter if this fails
+                    current_step_plan_.steps.clear();
                 }
 
                 // need to get the following from the OCS as well
@@ -1206,13 +1214,12 @@ void FootstepManager::stepPlanRequestPreemptCB()
 void FootstepManager::executeStepPlanGoalCB()
 {
 
+    vigir_footstep_planning_msgs::ExecuteStepPlanGoal action_goal = *(execute_step_plan_server_->acceptNewGoal());
+
     // trigger execution of client
     if(execute_step_plan_client_->isServerConnected())
     {
         // Fill in goal here and send it to the server (only the time stamp and parameters were really relevant)
-
-        vigir_footstep_planning_msgs::ExecuteStepPlanGoal action_goal = *(execute_step_plan_server_->acceptNewGoal());
-
         // lock the plan
         boost::recursive_mutex::scoped_lock plan_lock(step_plan_mutex_);
 
@@ -1259,12 +1266,13 @@ void FootstepManager::executeStepPlanPreemptCB()
 void FootstepManager::updateFeetGoalCB()
 {
 
+    vigir_footstep_planning_msgs::UpdateFeetGoal action_goal = *(update_feet_server_->acceptNewGoal());
+
     // trigger execution of client
     if(update_feet_client_->isServerConnected())
     {
         // Fill in goal here and send it to the server (only the time stamp and parameters were really relevant)
 
-        vigir_footstep_planning_msgs::UpdateFeetGoal action_goal = *(update_feet_server_->acceptNewGoal());
 
         update_feet_client_->sendGoal(action_goal,
                                       boost::bind(&FootstepManager::doneUpdateFeet, this, _1, _2),
