@@ -322,7 +322,8 @@ bool FootstepManager::calculateGoal(const geometry_msgs::PoseStamped& goal_pose)
 
     boost::recursive_mutex::scoped_lock lock(goal_mutex_);
     goal_ = feet_pose_service.response.feet; // goal in robot feet frame (ankle)
-    goal_pose_ = goal_pose;
+    goal_.header = goal_pose.header; // retain the goal header
+    goal_pose_   = goal_pose;
     active_goal_pose_ = goal_pose_;
 
 }
@@ -1161,6 +1162,11 @@ void FootstepManager::stepPlanRequestGoalCB()
                     boost::recursive_mutex::scoped_lock plan_lock(step_plan_mutex_);
                     current_step_plan_.header.stamp = ros::Time(); // reset when requesting a pattern move to force regular replan latter if this fails
                     current_step_plan_.steps.clear();
+
+                    boost::recursive_mutex::scoped_lock lock(goal_mutex_);
+                    goal_pose_.header.stamp = request.header.stamp;
+                    goal_.header.stamp      = request.header.stamp;
+                    ROS_INFO("Reset goal stamp on pattern request to %f",goal_.header.stamp.toSec());
                 }
 
                 // need to get the following from the OCS as well
@@ -1336,6 +1342,7 @@ void FootstepManager::doneGenerateFeetPose(const actionlib::SimpleClientGoalStat
                 boost::recursive_mutex::scoped_lock lock(goal_mutex_);
                 goal_pose_ = active_goal_pose_;
                 goal_ = result->feet;
+                goal_.header = result->header;
 
             }
         }
@@ -1379,6 +1386,7 @@ void FootstepManager::doneGenerateFeetPose(const actionlib::SimpleClientGoalStat
             ROS_INFO("OBFSM:  doneGenerateFeetPose = Success with no active action!\n   %d: %s", result->status.error, vigir_footstep_planning::toString(result->status.error_msg).c_str());
             boost::recursive_mutex::scoped_lock lock(goal_mutex_);
             goal_ = result->feet;
+            goal_.header = result->header; // retain the goal time stamp
 
         }
     }
