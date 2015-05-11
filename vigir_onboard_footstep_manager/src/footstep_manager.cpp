@@ -325,7 +325,7 @@ bool FootstepManager::calculateGoal(const geometry_msgs::PoseStamped& goal_pose)
     goal_.header = goal_pose.header; // retain the goal header
     goal_pose_   = goal_pose;
     active_goal_pose_ = goal_pose_;
-
+    return true;
 }
 
 // This function accepts a new plan from the OCS side, ---validates----, and replaces existing plan
@@ -431,6 +431,7 @@ bool FootstepManager::getStartFeet(vigir_footstep_planning_msgs::Feet& start_fee
     }
 
     start_feet = feet_pose_service.response.feet;
+    return true;
 }
 
 void FootstepManager::requestStepPlanFromRobot()
