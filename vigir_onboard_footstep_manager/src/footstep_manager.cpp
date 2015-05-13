@@ -218,6 +218,7 @@ void FootstepManager::processFootstepPlanGoalUpdate(const flor_ocs_msgs::OCSFoot
              plan_goal->right_foot.pose.position.z,
              plan_goal->goal_pose.pose.position.x,plan_goal->goal_pose.pose.position.y,plan_goal->goal_pose.pose.position.z);
 
+    flor_ocs_msgs::OCSFootstepPlanRequest plan_request;
     {
         boost::recursive_mutex::scoped_lock lock(goal_mutex_);
         goal_.header.stamp = plan_goal->goal_pose.header.stamp;
@@ -225,16 +226,11 @@ void FootstepManager::processFootstepPlanGoalUpdate(const flor_ocs_msgs::OCSFoot
         goal_.right.pose   = plan_goal->right_foot.pose; // goal in robot feet frame (ankle)
         goal_pose_         = plan_goal->goal_pose;
         active_goal_pose_  = plan_goal->goal_pose;
-    }
-
-    flor_ocs_msgs::OCSFootstepPlanRequest plan_request;
-    {
-        boost::recursive_mutex::scoped_lock lock(goal_mutex_);
         plan_request.plan_time          = goal_.header.stamp;
-        plan_request.start_index        = 0;
+        plan_request.start_index        = -1;
     }
     {
-        boost::recursive_mutex::scoped_lock lock(goal_mutex_);
+        boost::recursive_mutex::scoped_lock lock(param_mutex_);
         plan_request.parameter_set_name = selected_footstep_parameter_set_;
     }
     ROS_INFO("OBFSM: processFootstepPlanGoalUpdate : Invoke planner after getting new goal feet poses with time stamp=%f",plan_request.plan_time.toSec());
@@ -253,10 +249,10 @@ void FootstepManager::processFootstepPlanGoal(const flor_ocs_msgs::OCSFootstepPl
         {
             boost::recursive_mutex::scoped_lock lock(goal_mutex_);
             plan_request.plan_time          = goal_.header.stamp;
-            plan_request.start_index        = 0;
+            plan_request.start_index        = -1;
         }
         {
-            boost::recursive_mutex::scoped_lock lock(goal_mutex_);
+            boost::recursive_mutex::scoped_lock lock(param_mutex_);
             plan_request.parameter_set_name = selected_footstep_parameter_set_;
         }
         ROS_INFO("OBFSM: processFootstepPlanGoal : Invoke planner after getting new goal with time stamp=%f",plan_request.plan_time.toSec());
