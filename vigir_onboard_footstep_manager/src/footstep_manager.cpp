@@ -1152,7 +1152,7 @@ void FootstepManager::stepPlanRequestGoalCB()
                         request.planning_mode = vigir_footstep_planning_msgs::StepPlanRequest::PLANNING_MODE_3D;
                     else
                         request.planning_mode = vigir_footstep_planning_msgs::StepPlanRequest::PLANNING_MODE_2D;
-                    ROS_INFO(" Using planning mode = %d as specified by operator",request.planning_mode);
+                    ROS_INFO(" OBFSM: Using specified planning mode = %d",request.planning_mode);
                 }
                 else
                 {
@@ -1163,7 +1163,7 @@ void FootstepManager::stepPlanRequestGoalCB()
                     boost::recursive_mutex::scoped_lock lock(goal_mutex_);
                     goal_pose_.header.stamp = request.header.stamp;
                     goal_.header.stamp      = request.header.stamp;
-                    ROS_INFO("Reset goal stamp on pattern request to %f",goal_.header.stamp.toSec());
+                    ROS_INFO("OBFSM: Reset goal stamp on pattern request to %f",goal_.header.stamp.toSec());
                 }
 
                 // need to get the following from the OCS as well
@@ -1172,7 +1172,15 @@ void FootstepManager::stepPlanRequestGoalCB()
                 request.max_path_length_ratio = planner_config_.path_length_ratio;
 
                 // and then use the selected parameter set
-                request.parameter_set_name.data = selected_footstep_parameter_set_;
+                if ("" == request.parameter_set_name.data)
+                {
+	                request.parameter_set_name.data = selected_footstep_parameter_set_;
+	                ROS_INFO("OBFSM: Using previously selected parameter set=%s",request.parameter_set_name.data.c_str());
+                }
+                else
+                {
+	                ROS_INFO("OBFSM: Using parameter set=%s specified in action goal",request.parameter_set_name.data.c_str());
+                }
             }
 
             // Fill in goal here
