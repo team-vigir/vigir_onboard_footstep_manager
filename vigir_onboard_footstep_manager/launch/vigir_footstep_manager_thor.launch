@@ -6,7 +6,7 @@
     <!-- start up footstep manager system -->
     <node name="onboard_footstep_manager" ns="$(arg namespace)" pkg="vigir_onboard_footstep_manager" type="onboard_footstep_manager" respawn="true" output="screen" >
       <param name="planner_namespace"    value="/vigir/footstep_planning" />
-      <param name="controller_namespace" value="/thor_mang/footstep_controller" />
+      <param name="controller_namespace" value="/thor_mang/step_controller" />
       <param name="max_planning_time"     value="21.0"/>
       <param name="max_number_steps"      value="99"  />
       <param name="max_path_length_ratio" value="4.5" />
