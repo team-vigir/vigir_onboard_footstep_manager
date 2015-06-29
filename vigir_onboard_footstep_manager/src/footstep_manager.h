@@ -48,15 +48,15 @@
 #include <vigir_footstep_planning_msgs/footstep_planning_msgs.h>
 #include <vigir_footstep_planning_msgs/visualization.h>
 
-#include <flor_ocs_msgs/OCSFootstepUpdate.h>
-#include <flor_ocs_msgs/OCSFootstepPlanGoal.h>
-#include <flor_ocs_msgs/OCSFootstepPlanGoalUpdate.h>
-#include <flor_ocs_msgs/OCSFootstepPlanRequest.h>
+#include <vigir_ocs_msgs/OCSFootstepUpdate.h>
+#include <vigir_ocs_msgs/OCSFootstepPlanGoal.h>
+#include <vigir_ocs_msgs/OCSFootstepPlanGoalUpdate.h>
+#include <vigir_ocs_msgs/OCSFootstepPlanRequest.h>
 
-#include <flor_ocs_msgs/OCSFootstepPlanParameters.h>
+#include <vigir_ocs_msgs/OCSFootstepPlanParameters.h>
 
-#include <flor_ocs_msgs/OCSFootstepPlanUpdate.h>
-#include <flor_ocs_msgs/OCSFootstepStatus.h>
+#include <vigir_ocs_msgs/OCSFootstepPlanUpdate.h>
+#include <vigir_ocs_msgs/OCSFootstepStatus.h>
 
 #include <vigir_footstep_planning_msgs/footstep_planning_msgs.h>
 #include <vigir_footstep_planning_msgs/parameter_set.h>
@@ -91,16 +91,16 @@ namespace onboard_footstep
         // triggers footstep planning via topic calls from OCS
 
         // Update single step
-        void processFootstepPoseUpdate(const flor_ocs_msgs::OCSFootstepUpdate::ConstPtr& msg); //// done
+        void processFootstepPoseUpdate(const vigir_ocs_msgs::OCSFootstepUpdate::ConstPtr& msg); //// done
 
         // Update the goal feet poses from OCS (implicit request to replan with specified parameters)
-        void processFootstepPlanGoalUpdate(const flor_ocs_msgs::OCSFootstepPlanGoalUpdate::ConstPtr& plan_goal); // shell only
+        void processFootstepPlanGoalUpdate(const vigir_ocs_msgs::OCSFootstepPlanGoalUpdate::ConstPtr& plan_goal); // shell only
 
         // Set a new 3D goal (x,y,yaw) and calculate feet poses from terrain (implicit request to replan)
-        void processFootstepPlanGoal(const flor_ocs_msgs::OCSFootstepPlanGoal::ConstPtr& plan_goal); // need replan request
+        void processFootstepPlanGoal(const vigir_ocs_msgs::OCSFootstepPlanGoal::ConstPtr& plan_goal); // need replan request
 
         // Set planning parameters (e.g. timeout)
-        void processFootstepPlanParameters(const flor_ocs_msgs::OCSFootstepPlanParameters::ConstPtr& msg); //// done
+        void processFootstepPlanParameters(const vigir_ocs_msgs::OCSFootstepPlanParameters::ConstPtr& msg); //// done
 
         // Select a default parameter set for planning
         void processFootstepParamSetSelected(const std_msgs::String::ConstPtr& msg); //// stores name, no validation
@@ -109,7 +109,7 @@ namespace onboard_footstep
         void processFootstepPlanUpdate(const vigir_footstep_planning_msgs::StepPlan::ConstPtr& msg); // shell only
 
         // Request to re-plan with different
-        void processFootstepPlanRequest(const flor_ocs_msgs::OCSFootstepPlanRequest::ConstPtr& plan_request); // in progress
+        void processFootstepPlanRequest(const vigir_ocs_msgs::OCSFootstepPlanRequest::ConstPtr& plan_request); // in progress
 
         // Execute via action call
 
@@ -181,7 +181,7 @@ namespace onboard_footstep
 
         // helper function for finding step based on step_index
         bool findStep(const unsigned int& step_index, vigir_footstep_planning_msgs::Step& step, unsigned int& step_plan_index );
-        void publishPlannerStatus(const flor_ocs_msgs::OCSFootstepStatus::_status_type& status, const std::string& status_msg = "" );
+        void publishPlannerStatus(const vigir_ocs_msgs::OCSFootstepStatus::_status_type& status, const std::string& status_msg = "" );
         bool processNewStepPlan(const vigir_footstep_planning_msgs::StepPlan& step_plan);
         bool getStartFeet(vigir_footstep_planning_msgs::Feet& feet);
 
@@ -245,7 +245,7 @@ namespace onboard_footstep
         vigir_footstep_planning_msgs::Feet  goal_;
 
         // last step plan request received, saved and used mostly for message parameters
-        flor_ocs_msgs::OCSFootstepPlanParameters planner_config_;
+        vigir_ocs_msgs::OCSFootstepPlanParameters planner_config_;
 
         // specifies which footstep will be used as starting point for the planner, -1 to start a new one
         int start_step_index_;
