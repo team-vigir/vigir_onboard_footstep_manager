@@ -496,13 +496,13 @@ void FootstepManager::doneUpdateFeet(const actionlib::SimpleClientGoalState& sta
         {
             if(vigir_footstep_planning::hasError(result->status) && result->status.error != vigir_footstep_planning_msgs::ErrorStatus::ERR_INVALID_TERRAIN_MODEL)
             {
-                ROS_ERROR("UpdateFeet: Error occured!\n     %d: %s", result->status.error, vigir_footstep_planning::toString(result->status.error_msg).c_str());
+                ROS_ERROR("UpdateFeet: Error occured!\n     %d: %s", result->status.error, result->status.error_msg.c_str());
                 publishPlannerStatus(vigir_ocs_msgs::OCSFootstepStatus::FOOTSTEP_INVALID_GOAL, vigir_footstep_planning::toString(result->status));
                 update_feet_server_->setAborted(*result);
             }
             else
             {
-                ROS_INFO("OBFSM:  doneUpdateFeet = Success!\n   %d: %s", result->status.error, vigir_footstep_planning::toString(result->status.error_msg).c_str());
+                ROS_INFO("OBFSM:  doneUpdateFeet = Success!\n   %d: %s", result->status.error, result->status.error_msg.c_str());
                 update_feet_server_->setSucceeded(*result);
 
                 // update the goal feet
@@ -531,24 +531,24 @@ void FootstepManager::doneUpdateFeet(const actionlib::SimpleClientGoalState& sta
         }
         else
         {
-            ROS_ERROR(" OBFSM: doneUpdateFeet  unhandled state=%s - with result %d: ^%s - abort server goal!",state.toString().c_str(), result->status.error, vigir_footstep_planning::toString(result->status.error_msg).c_str());
+            ROS_ERROR(" OBFSM: doneUpdateFeet  unhandled state=%s - with result %d: ^%s - abort server goal!", state.toString().c_str(), result->status.error, result->status.error_msg.c_str());
             update_feet_server_->setAborted(*result);
         }
 
     }
     else
     {
-        ROS_ERROR(" OBFSM:  doneUpdateFeet - action server was not active! - client result=%d:%s with state=%s!", result->status.error, vigir_footstep_planning::toString(result->status.error_msg).c_str(),state.toString().c_str());
+        ROS_ERROR(" OBFSM:  doneUpdateFeet - action server was not active! - client result=%d:%s with state=%s!", result->status.error, result->status.error_msg.c_str(),state.toString().c_str());
 
         if(vigir_footstep_planning::hasError(result->status) && result->status.error != vigir_footstep_planning_msgs::ErrorStatus::ERR_INVALID_TERRAIN_MODEL)
         {
-            ROS_ERROR("UpdateFeet: Error occured!\n     %d : %s", result->status.error, vigir_footstep_planning::toString(result->status.error_msg).c_str());
+            ROS_ERROR("UpdateFeet: Error occured!\n     %d : %s", result->status.error, result->status.error_msg.c_str());
             publishPlannerStatus(vigir_ocs_msgs::OCSFootstepStatus::FOOTSTEP_INVALID_GOAL, vigir_footstep_planning::toString(result->status));
         }
         else
         {
             // update the goal feet
-            ROS_INFO("OBFSM:  doneUpdateFeet = Success with no active action!\n   %d: %s", result->status.error, vigir_footstep_planning::toString(result->status.error_msg).c_str());
+            ROS_INFO("OBFSM:  doneUpdateFeet = Success with no active action!\n   %d: %s", result->status.error, result->status.error_msg.c_str());
             boost::recursive_mutex::scoped_lock lock(goal_mutex_);
             goal_ = result->feet;
 
@@ -996,7 +996,7 @@ void FootstepManager::doneExecuteStepPlan(const actionlib::SimpleClientGoalState
 void FootstepManager::sendGetAllParameterSetsGoal()
 {
     // Fill in goal here
-    vigir_footstep_planning_msgs::GetAllParameterSetsGoal action_goal;
+    vigir_generic_params::GetAllParameterSetsGoal action_goal;
 
     // and send it to the server
     if(get_all_parameter_sets_client_->isServerConnected())
@@ -1017,35 +1017,22 @@ void FootstepManager::activeGetAllParameterSets()
     ROS_INFO("OBFSM:  GetAllParameterSets: Status changed to active.");
 }
 
-void FootstepManager::feedbackGetAllParameterSets(const vigir_footstep_planning_msgs::GetAllParameterSetsFeedbackConstPtr& feedback)
+void FootstepManager::feedbackGetAllParameterSets(const vigir_generic_params::GetAllParameterSetsFeedbackConstPtr& feedback)
 {
     ROS_INFO("OBFSM:  GetAllParameterSets: Feedback received.");
 }
 
-void FootstepManager::doneGetAllParameterSets(const actionlib::SimpleClientGoalState& state, const vigir_footstep_planning_msgs::GetAllParameterSetsResultConstPtr& result)
+void FootstepManager::doneGetAllParameterSets(const actionlib::SimpleClientGoalState& state, const vigir_generic_params::GetAllParameterSetsResultConstPtr& result)
 {
-    ROS_INFO("OBFSM:  GetAllParameterSets: Got action response. %s", result->status.error_msg.c_str());
+    ROS_INFO("OBFSM:  GetAllParameterSets: Got action response.");
 
-    if(vigir_footstep_planning::hasError(result->status))
-    {
-        ROS_ERROR("OBFSM:  GetAllParameterSets: Error occured!\n%s", vigir_footstep_planning::toString(result->status).c_str());
+    boost::recursive_mutex::scoped_lock lock(param_mutex_);
 
-        // send updated status to ocs
-        vigir_ocs_msgs::OCSFootstepStatus planner_status;
-        planner_status.status = vigir_ocs_msgs::OCSFootstepStatus::FOOTSTEP_PLANNER_FAILED;
-        planner_status.status_msg = result->status.error_msg;
-        publishPlannerStatus(planner_status.status, planner_status.status_msg);
-    }
-    else
-    {
-        boost::recursive_mutex::scoped_lock lock(param_mutex_);
+    footstep_parameter_set_list_.clear();
+    for(int i = 0; i < result->param_sets.size(); i++)
+        footstep_parameter_set_list_.push_back(result->param_sets[i]);
 
-        footstep_parameter_set_list_.clear();
-        for(int i = 0; i < result->param_sets.size(); i++)
-            footstep_parameter_set_list_.push_back(result->param_sets[i]);
-
-        //this->publishFootstepParameterSetList();
-    }
+    //this->publishFootstepParameterSetList();
 }
 
 
@@ -1174,12 +1161,12 @@ void FootstepManager::stepPlanRequestGoalCB()
                 // and then use the selected parameter set
                 if ("" == request.parameter_set_name.data)
                 {
-	                request.parameter_set_name.data = selected_footstep_parameter_set_;
-	                ROS_INFO("OBFSM: Using previously selected parameter set=%s",request.parameter_set_name.data.c_str());
+                  request.parameter_set_name.data = selected_footstep_parameter_set_;
+                  ROS_INFO("OBFSM: Using previously selected parameter set=%s",request.parameter_set_name.data.c_str());
                 }
                 else
                 {
-	                ROS_INFO("OBFSM: Using parameter set=%s specified in action goal",request.parameter_set_name.data.c_str());
+                  ROS_INFO("OBFSM: Using parameter set=%s specified in action goal",request.parameter_set_name.data.c_str());
                 }
             }
 
@@ -1334,13 +1321,13 @@ void FootstepManager::doneGenerateFeetPose(const actionlib::SimpleClientGoalStat
         {
             if(vigir_footstep_planning::hasError(result->status) && result->status.error != vigir_footstep_planning_msgs::ErrorStatus::ERR_INVALID_TERRAIN_MODEL)
             {
-                ROS_ERROR("GenerateFeetPose: Error occured!\n     %d: %s", result->status.error, vigir_footstep_planning::toString(result->status.error_msg).c_str());
+                ROS_ERROR("GenerateFeetPose: Error occured!\n     %d: %s", result->status.error, result->status.error_msg.c_str());
                 publishPlannerStatus(vigir_ocs_msgs::OCSFootstepStatus::FOOTSTEP_INVALID_GOAL, vigir_footstep_planning::toString(result->status));
                 generate_feet_pose_server_->setAborted(*result);
             }
             else
             {
-                ROS_INFO("OBFSM:  doneGenerateFeetPose = Success!\n   %d: %s", result->status.error, vigir_footstep_planning::toString(result->status.error_msg).c_str());
+                ROS_INFO("OBFSM:  doneGenerateFeetPose = Success!\n   %d: %s", result->status.error, result->status.error_msg.c_str());
                 generate_feet_pose_server_->setSucceeded(*result);
 
                 // update the goal feet
@@ -1371,24 +1358,24 @@ void FootstepManager::doneGenerateFeetPose(const actionlib::SimpleClientGoalStat
         }
         else
         {
-            ROS_ERROR(" OBFSM: doneGenerateFeetPose  unhandled state=%s - with result %d: ^%s - abort server goal!",state.toString().c_str(), result->status.error, vigir_footstep_planning::toString(result->status.error_msg).c_str());
+            ROS_ERROR(" OBFSM: doneGenerateFeetPose  unhandled state=%s - with result %d: ^%s - abort server goal!",state.toString().c_str(), result->status.error, result->status.error_msg.c_str());
             generate_feet_pose_server_->setAborted(*result);
         }
 
     }
     else
     {
-        ROS_ERROR(" OBFSM:  doneGenerateFeetPose - action server was not active! - client result=%d:%s with state=%s!", result->status.error, vigir_footstep_planning::toString(result->status.error_msg).c_str(),state.toString().c_str());
+        ROS_ERROR(" OBFSM:  doneGenerateFeetPose - action server was not active! - client result=%d:%s with state=%s!", result->status.error, result->status.error_msg.c_str(),state.toString().c_str());
 
         if(vigir_footstep_planning::hasError(result->status) && result->status.error != vigir_footstep_planning_msgs::ErrorStatus::ERR_INVALID_TERRAIN_MODEL)
         {
-            ROS_ERROR("GenerateFeetPose: Error occured!\n     %d : %s", result->status.error, vigir_footstep_planning::toString(result->status.error_msg).c_str());
+            ROS_ERROR("GenerateFeetPose: Error occured!\n     %d : %s", result->status.error, result->status.error_msg.c_str());
             publishPlannerStatus(vigir_ocs_msgs::OCSFootstepStatus::FOOTSTEP_INVALID_GOAL, vigir_footstep_planning::toString(result->status));
         }
         else
         {
             // update the goal feet
-            ROS_INFO("OBFSM:  doneGenerateFeetPose = Success with no active action!\n   %d: %s", result->status.error, vigir_footstep_planning::toString(result->status.error_msg).c_str());
+            ROS_INFO("OBFSM:  doneGenerateFeetPose = Success with no active action!\n   %d: %s", result->status.error, result->status.error_msg.c_str());
             boost::recursive_mutex::scoped_lock lock(goal_mutex_);
             goal_ = result->feet;
             goal_.header = result->header; // retain the goal time stamp
