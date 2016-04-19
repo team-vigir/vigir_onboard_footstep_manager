@@ -4,6 +4,8 @@ project(vigir_onboard_footstep_manager)
 set(ROS_BUILD_TYPE Debug)
 #set(ROS_BUILD_TYPE RelWithDebInfo)
 
+set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
+
 ## Find catkin and any catkin packages on which
 ## this package depends at build time
 find_package(catkin REQUIRED COMPONENTS roscpp rospy tf pluginlib rviz std_msgs geometry_msgs visualization_msgs nav_msgs vigir_ocs_msgs nodelet actionlib_msgs actionlib vigir_footstep_planning_msgs vigir_footstep_planning_lib vigir_foot_pose_transformer)
